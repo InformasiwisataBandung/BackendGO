@@ -10,8 +10,8 @@ import (
 )
 
 func TestUpdateGetData(t *testing.T) {
-	mconn := SetConnection("MONGOULBI", "petapedia")
-	datagedung := GetAllBangunanLineString(mconn, "petapedia")
+	mconn := SetConnection("MONGOSTRING", "InformasiWisataBandung")
+	datagedung := GetAllBangunanLineString(mconn, "InformasiWisataBandung")
 	fmt.Println(datagedung)
 }
 
@@ -34,7 +34,7 @@ func TestGeneratePrivateKeyPaseto(t *testing.T) {
 }
 
 func TestHashFunction(t *testing.T) {
-	mconn := SetConnection("MONGOULBI", "petapedia")
+	mconn := SetConnection("MONGOSTRING", "InfromasiWisataBandung")
 	var userdata User
 	userdata.Username = "petped"
 	userdata.Password = "secret"
@@ -50,7 +50,7 @@ func TestHashFunction(t *testing.T) {
 }
 
 func TestIsPasswordValid(t *testing.T) {
-	mconn := SetConnection("MONGOULBI", "petapedia")
+	mconn := SetConnection("MONGOSTRING", "informasiWisataBandung")
 	var userdata User
 	userdata.Username = "petped"
 	userdata.Password = "secret"
