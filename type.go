@@ -52,3 +52,17 @@ type Credential struct {
 	Token   string `json:"token,omitempty" bson:"token,omitempty"`
 	Message string `json:"message,omitempty" bson:"message,omitempty"`
 }
+type TempatWisata struct {
+	Nama      string  `json:"nama"`
+	Jenis     string  `json:"jenis"`
+	Deskripsi string  `json:"deskripsi"`
+	Lokasi    Lokasi  `json:"lokasi"`
+	Alamat    string  `json:"alamat"`
+	Gambar    string  `json:"gambar"`
+	Rating    float64 `json:"rating"`
+}
+
+type Lokasi struct {
+	Type        string    `json:"type"`
+	Coordinates []float64 `json:"coordinates"`
+}
