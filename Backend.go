@@ -3,6 +3,7 @@ package gisbdg
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 
@@ -127,4 +128,59 @@ func DeleteWisata(MONGOCONNSTRING, dbname, collectionname string, filter bson.D)
 	}
 
 	return nil
+}
+
+// Geocoding (untuk menemukan lokasi dari konten yang sudah dibuat)
+func Geocoding(MONGOCONNSTRINGENV, dbname, collectionname string, query string) ([]TempatWisata, error) {
+	clientOptions := options.Client().ApplyURI(MONGOCONNSTRINGENV)
+	client, err := mongo.Connect(context.TODO(), clientOptions)
+	if err != nil {
+		return nil, err
+	}
+	defer client.Disconnect(context.TODO())
+
+	collection := client.Database(dbname).Collection(collectionname)
+
+	var filter bson.M
+
+	// Jika query merupakan koordinat, maka cari berdasarkan koordinat
+	if isCoordinates(query) {
+		var coordinates []float64
+		// Parsing string koordinat ke dalam array float64
+		_, err := fmt.Sscanf(query, "[%f,%f]", &coordinates[0], &coordinates[1])
+		if err != nil {
+			return nil, err
+		}
+
+		// Buat filter untuk pencarian berdasarkan koordinat
+		filter = bson.M{"lokasi.coordinates": coordinates}
+	} else {
+		// Jika query adalah nama, cari berdasarkan nama
+		filter = bson.M{"nama": query}
+	}
+
+	var tempatList []TempatWisata
+	cursor, err := collection.Find(context.TODO(), filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(context.TODO())
+
+	for cursor.Next(context.TODO()) {
+		var tempat TempatWisata
+		err := cursor.Decode(&tempat)
+		if err != nil {
+			return nil, err
+		}
+		tempatList = append(tempatList, tempat)
+	}
+
+	return tempatList, nil
+}
+
+// Fungsi untuk mengecek apakah input adalah koordinat atau bukan
+func isCoordinates(input string) bool {
+	var coordinates []float64
+	_, err := fmt.Sscanf(input, "[%f,%f]", &coordinates[0], &coordinates[1])
+	return err == nil && len(coordinates) == 2
 }
