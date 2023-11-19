@@ -145,8 +145,7 @@ func Geocoding(MONGOCONNSTRINGENV, dbname, collectionname string, query string) 
 
 	// Jika query merupakan koordinat, maka cari berdasarkan koordinat
 	if isCoordinates(query) {
-		var coordinates []float64
-		// Parsing string koordinat ke dalam array float64
+		var coordinates [2]float64
 		_, err := fmt.Sscanf(query, "[%f,%f]", &coordinates[0], &coordinates[1])
 		if err != nil {
 			return nil, err
@@ -168,11 +167,14 @@ func Geocoding(MONGOCONNSTRINGENV, dbname, collectionname string, query string) 
 
 	for cursor.Next(context.TODO()) {
 		var tempat TempatWisata
-		err := cursor.Decode(&tempat)
-		if err != nil {
+		if err := cursor.Decode(&tempat); err != nil {
 			return nil, err
 		}
 		tempatList = append(tempatList, tempat)
+	}
+
+	if err := cursor.Err(); err != nil {
+		return nil, err
 	}
 
 	return tempatList, nil
@@ -180,7 +182,7 @@ func Geocoding(MONGOCONNSTRINGENV, dbname, collectionname string, query string) 
 
 // Fungsi untuk mengecek apakah input adalah koordinat atau bukan
 func isCoordinates(input string) bool {
-	var coordinates []float64
+	var coordinates [2]float64
 	_, err := fmt.Sscanf(input, "[%f,%f]", &coordinates[0], &coordinates[1])
-	return err == nil && len(coordinates) == 2
+	return err == nil
 }
