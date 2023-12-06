@@ -49,37 +49,35 @@ func GCFReturnStruct(DataStuct any) string {
 	jsondata, _ := json.Marshal(DataStuct)
 	return string(jsondata)
 }
-func CreateWisata(publicKey, MONGOSTRING, dbname, collectionname string, tempat TempatWisata, r *http.Request) error {
-	clientOptions := options.Client().ApplyURI(MONGOSTRING)
+func CreateWisata(MONGOCONNSTRING, dbname, collectionname, publicKey string, tempat TempatWisata, r *http.Request) error {
+	clientOptions := options.Client().ApplyURI(MONGOCONNSTRING)
 	client, err := mongo.Connect(context.TODO(), clientOptions)
-	var userdata User
+	if err != nil {
+		return err
+	}
+	defer client.Disconnect(context.TODO())
+
 	// Extract token from the request header
-	header := r.Header.Get("token")
+	header := r.Header.Get("Authorization")
 	if header == "" {
-		return nil
+		return errors.New("missing authorization token")
 	}
 
-	tokenusername := watoken.DecodeGetId(os.Getenv(publicKey), header)
-	userdata.Username = tokenusername
+	// Decode token to get username or relevant information
+	tokenstring := watoken.DecodeGetId(os.Getenv(publicKey), header)
+	// Perform necessary checks based on the token information, for example:
+	// Check if the token username has the necessary permissions or is valid
 
-	if usernameExists(MONGOSTRING, dbname, userdata) {
-		if err != nil {
-			return err
-		}
-		defer client.Disconnect(context.TODO())
+	collection := client.Database(dbname).Collection(collectionname)
 
-		collection := client.Database(dbname).Collection(collectionname)
-
-		_, err = collection.InsertOne(context.TODO(), tempat)
-		if err != nil {
-			return err
-		}
+	_, err = collection.InsertOne(context.TODO(), tempat)
+	if err != nil {
+		return err
 	}
-
-	// Create User struct with the decoded username
 
 	return nil
 }
+
 func ReadWisata(MONGOCONNSTRING, dbname, collectionname string) ([]TempatWisata, error) {
 	clientOptions := options.Client().ApplyURI(MONGOCONNSTRING)
 	client, err := mongo.Connect(context.TODO(), clientOptions)
