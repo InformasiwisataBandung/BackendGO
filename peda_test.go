@@ -58,3 +58,17 @@ func TestIsPasswordValid(t *testing.T) {
 	anu := IsPasswordValid(mconn, "user", userdata)
 	fmt.Println(anu)
 }
+
+func TestEnCode(t *testing.T) {
+	anu, err := watoken.Encode("ini testing", pvtKey)
+	fmt.Println(err)
+	fmt.Println(anu)
+}
+func TestDcode(t *testing.T) {
+	anu := watoken.DecodeGetId(pbcKey, token)
+	fmt.Println(anu)
+}
+
+var pvtKey = "fbd4a28176db98361b4fb8936e2a1cb499bfe6a3760a3a0726fba735c6edac75513f6d70886d4abd6c475403e025afb4a053cc988cb8ba31ef062847e5e8b4d6"
+var pbcKey = "513f6d70886d4abd6c475403e025afb4a053cc988cb8ba31ef062847e5e8b4d6"
+var token = "v4.public.eyJleHAiOiIyMDIzLTEyLTA0VDEyOjEzOjMzKzA3OjAwIiwiaWF0IjoiMjAyMy0xMi0wNFQxMDoxMzozMyswNzowMCIsImlkIjoiaW5pIHRlc3RpbmciLCJuYmYiOiIyMDIzLTEyLTA0VDEwOjEzOjMzKzA3OjAwIn38C8vCUHizxSzELIDp4svHcQntBi8CsyrxDJ8j_pTpCsBHZBBSku8mioJ0qK5Gn2Z58aHXxW7x5B_dUHyZGG0L"

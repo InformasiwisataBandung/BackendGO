@@ -49,20 +49,34 @@ func GCFReturnStruct(DataStuct any) string {
 	jsondata, _ := json.Marshal(DataStuct)
 	return string(jsondata)
 }
-func CreateWisata(MONGOCONNSTRING, dbname, collectionname string, tempat TempatWisata) error {
-	clientOptions := options.Client().ApplyURI(MONGOCONNSTRING)
+func CreateWisata(publicKey, MONGOSTRING, dbname, collectionname string, tempat TempatWisata, r *http.Request) error {
+	clientOptions := options.Client().ApplyURI(MONGOSTRING)
 	client, err := mongo.Connect(context.TODO(), clientOptions)
-	if err != nil {
-		return err
+	var userdata User
+	// Extract token from the request header
+	header := r.Header.Get("token")
+	if header == "" {
+		return nil
 	}
-	defer client.Disconnect(context.TODO())
 
-	collection := client.Database(dbname).Collection(collectionname)
+	tokenusername := watoken.DecodeGetId(os.Getenv(publicKey), header)
+	userdata.Username = tokenusername
 
-	_, err = collection.InsertOne(context.TODO(), tempat)
-	if err != nil {
-		return err
+	if usernameExists(MONGOSTRING, dbname, userdata) {
+		if err != nil {
+			return err
+		}
+		defer client.Disconnect(context.TODO())
+
+		collection := client.Database(dbname).Collection(collectionname)
+
+		_, err = collection.InsertOne(context.TODO(), tempat)
+		if err != nil {
+			return err
+		}
 	}
+
+	// Create User struct with the decoded username
 
 	return nil
 }
@@ -92,7 +106,6 @@ func ReadWisata(MONGOCONNSTRING, dbname, collectionname string) ([]TempatWisata,
 		}
 		tempatList = append(tempatList, tempat)
 	}
-
 	return tempatList, nil
 }
 func UpdateWisata(MONGOCONNSTRING, dbname, collectionname string, filter bson.D, update bson.D) error {
