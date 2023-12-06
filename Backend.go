@@ -13,6 +13,47 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+func Autorisasi(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) string {
+	var response CredentialUser
+	var auth User
+	response.Status = false
+
+	// Extract token from the request header
+	header := r.Header.Get("token")
+	if header == "" {
+		response.Message = "Header login tidak ditemukan"
+		return GCFReturnStruct(response)
+	}
+
+	// Decode token values
+
+	tokenusername := DecodeGetUsername(os.Getenv(publickey), header)
+	tokenrole := DecodeGetRole(os.Getenv(publickey), header)
+
+	// Create User struct with the decoded username
+	auth.Username = tokenusername
+
+	// Check if decoding results are valid
+	if tokenusername == "" || tokenrole == "" {
+		response.Message = "Hasil decode tidak ditemukan"
+		return GCFReturnStruct(response)
+	}
+
+	// Check if the user exists
+	if !usernameExists(MONGOCONNSTRINGENV, dbname, auth) {
+		response.Message = "Akun tidak ditemukan"
+		return GCFReturnStruct(response)
+	}
+
+	// Successful token decoding and user validation
+	response.Message = "Berhasil decode token"
+	response.Status = true
+	response.Data.Username = tokenusername
+	response.Data.Role = tokenrole
+
+	return GCFReturnStruct(response)
+}
+
 func GCFHandler(MONGOCONNSTRINGENV, dbname, collectionname string) string {
 	mconn := SetConnection(MONGOCONNSTRINGENV, dbname)
 	datagedung := GetAllBangunanLineString(mconn, collectionname)
@@ -49,24 +90,13 @@ func GCFReturnStruct(DataStuct any) string {
 	jsondata, _ := json.Marshal(DataStuct)
 	return string(jsondata)
 }
-func CreateWisata(MONGOCONNSTRING, dbname, collectionname, publicKey string, tempat TempatWisata, r *http.Request) error {
+func CreateWisata(MONGOCONNSTRING, dbname, collectionname string, tempat TempatWisata) error {
 	clientOptions := options.Client().ApplyURI(MONGOCONNSTRING)
 	client, err := mongo.Connect(context.TODO(), clientOptions)
 	if err != nil {
 		return err
 	}
 	defer client.Disconnect(context.TODO())
-
-	// Extract token from the request header
-	header := r.Header.Get("Authorization")
-	if header == "" {
-		return errors.New("missing authorization token")
-	}
-
-	// Decode token to get username or relevant information
-	tokenstring := watoken.DecodeGetId(os.Getenv(publicKey), header)
-	// Perform necessary checks based on the token information, for example:
-	// Check if the token username has the necessary permissions or is valid
 
 	collection := client.Database(dbname).Collection(collectionname)
 

@@ -1,5 +1,7 @@
 package gisbdg
 
+import "time"
+
 type GeometryPolygon struct {
 	Coordinates [][][]float64 `json:"coordinates" bson:"coordinates"`
 	Type        string        `json:"type" bson:"type"`
@@ -65,4 +67,16 @@ type TempatWisata struct {
 type Lokasi struct {
 	Type        string    `json:"type"`
 	Coordinates []float64 `json:"coordinates"`
+}
+type CredentialUser struct {
+	Status  bool   `json:"status" bson:"status"`
+	Data    User   `json:"data,omitempty" bson:"data,omitempty"`
+	Message string `json:"message,omitempty" bson:"message,omitempty"`
+}
+type Payload struct {
+	User string    `json:"user"`
+	Role string    `json:"role"`
+	Exp  time.Time `json:"exp"`
+	Iat  time.Time `json:"iat"`
+	Nbf  time.Time `json:"nbf"`
 }

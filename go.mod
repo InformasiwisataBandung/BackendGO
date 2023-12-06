@@ -3,6 +3,7 @@ module github.com/InformasiwisataBandung/BackendGO
 go 1.21.3
 
 require (
+	aidanwoods.dev/go-paseto v1.5.1
 	github.com/GoogleCloudPlatform/functions-framework-go v1.8.0
 	github.com/aiteung/atdb v0.1.1
 	github.com/whatsauth/watoken v0.1.3
@@ -11,7 +12,6 @@ require (
 )
 
 require (
-	aidanwoods.dev/go-paseto v1.5.0 // indirect
 	aidanwoods.dev/go-result v0.1.0 // indirect
 	cloud.google.com/go/functions v1.15.1 // indirect
 	github.com/cloudevents/sdk-go/v2 v2.14.0 // indirect
