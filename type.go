@@ -44,9 +44,10 @@ type Properties struct {
 }
 
 type User struct {
-	Username string `json:"username" bson:"username"`
-	Password string `json:"password" bson:"password"`
-	Role     string `json:"role,omitempty" bson:"role,omitempty"`
+	No_whatsapp string `json:"no_whatsapp,omitempty" bson:"no_whatsapp"`
+	Username    string `json:"username" bson:"username"`
+	Password    string `json:"password,omitempty" bson:"password"`
+	Role        string `json:"role,omitempty" bson:"role,omitempty"`
 }
 
 type Credential struct {
@@ -79,4 +80,9 @@ type Payload struct {
 	Exp  time.Time `json:"exp"`
 	Iat  time.Time `json:"iat"`
 	Nbf  time.Time `json:"nbf"`
+}
+type BeriPesan struct {
+	Status  bool   `json:"status" bson:"status"`
+	Message string `json:"message" bson:"message"`
+	Token   string `json:"token,omitempty" bson:"token,omitempty"`
 }

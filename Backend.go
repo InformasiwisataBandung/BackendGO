@@ -7,13 +7,16 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/aiteung/atapi"
+	"github.com/aiteung/atmessage"
+	"github.com/whatsauth/wa"
 	"github.com/whatsauth/watoken"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func Autorisasi(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) string {
+func Otorisasi(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) string {
 	var response CredentialUser
 	var auth User
 	response.Status = false
@@ -54,13 +57,7 @@ func Autorisasi(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *http.
 	return GCFReturnStruct(response)
 }
 
-func GCFHandler(MONGOCONNSTRINGENV, dbname, collectionname string) string {
-	mconn := SetConnection(MONGOCONNSTRINGENV, dbname)
-	datagedung := GetAllBangunanLineString(mconn, collectionname)
-	return GCFReturnStruct(datagedung)
-}
-
-func GCFPostHandler(PASETOPRIVATEKEYENV, MONGOCONNSTRINGENV, dbname, collectionname string, r *http.Request) string {
+func GCFPostHandlerSIGN(token, PASETOPRIVATEKEYENV, MONGOCONNSTRINGENV, dbname, collectionname string, r *http.Request) string {
 	var Response Credential
 	Response.Status = false
 	mconn := SetConnection(MONGOCONNSTRINGENV, dbname)
@@ -85,7 +82,63 @@ func GCFPostHandler(PASETOPRIVATEKEYENV, MONGOCONNSTRINGENV, dbname, collectionn
 
 	return GCFReturnStruct(Response)
 }
+func Registrasi(TOKEN, MONGOENV, dbname, collname string, r *http.Request) string {
+	var response BeriPesan
+	response.Status = false
 
+	// Establish MongoDB connection
+	mconn := SetConnection(MONGOENV, dbname)
+
+	// Decode user data from the request body
+	var datauser User
+	err := json.NewDecoder(r.Body).Decode(&datauser)
+
+	// Check for JSON decoding errors
+	if err != nil {
+		response.Message = "Error parsing application/json: " + err.Error()
+		return GCFReturnStruct(response)
+	}
+
+	// Check if the username already exists
+	if usernameExists(MONGOENV, dbname, datauser) {
+		response.Message = "Username telah dipakai"
+		return GCFReturnStruct(response)
+	}
+
+	// Hash the user's password
+	hash, hashErr := HashPassword(datauser.Password)
+	if hashErr != nil {
+		response.Message = "Gagal hash password: " + hashErr.Error()
+		return GCFReturnStruct(response)
+	}
+
+	// Check if the 'No_whatsapp' field is empty
+	if datauser.No_whatsapp == "" {
+		response.Message = "Nomor We A wajib diisi"
+		return GCFReturnStruct(response)
+	}
+
+	// Insert user data into the database
+	InsertUserdata(mconn, collname, datauser.No_whatsapp, datauser.Username, hash, datauser.Role)
+	response.Status = true
+	response.Message = "Berhasil input data"
+
+	// Prepare and send a WhatsApp message with registration details
+	var username = datauser.Username
+	var password = datauser.Password
+	var nohp = datauser.No_whatsapp
+
+	dt := &wa.TextMessage{
+		To:       nohp,
+		IsGroup:  false,
+		Messages: "Registrasi Sukses buos, Username nya : " + username + "\nDengan Password yang dibuat adalah: " + password + "\nsimpan informasi berikut dengan baik",
+	}
+
+	// Make an API call to send WhatsApp message
+	atapi.PostStructWithToken[atmessage.Response]("Token", os.Getenv(TOKEN), dt, "https://api.wa.my.id/api/send/message/text")
+
+	return GCFReturnStruct(response)
+}
 func GCFReturnStruct(DataStuct any) string {
 	jsondata, _ := json.Marshal(DataStuct)
 	return string(jsondata)

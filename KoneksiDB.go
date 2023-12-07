@@ -17,11 +17,6 @@ func SetConnection(MONGOCONNSTRINGENV, dbname string) *mongo.Database {
 	return atdb.MongoConnect(DBmongoinfo)
 }
 
-func GetAllBangunanLineString(mongoconn *mongo.Database, collection string) []GeoJson {
-	lokasi := atdb.GetAllDoc[[]GeoJson](mongoconn, collection)
-	return lokasi
-}
-
 func IsPasswordValid(mongoconn *mongo.Database, collection string, userdata User) bool {
 	filter := bson.M{"username": userdata.Username}
 	res := atdb.GetOneDoc[User](mongoconn, collection, filter)
@@ -34,4 +29,12 @@ func usernameExists(mongoenv, dbname string, userdata User) bool {
 	var user User
 	err := mconn.FindOne(context.Background(), filter).Decode(&user)
 	return err == nil
+}
+func InsertUserdata(mongoenv *mongo.Database, collname, no_whatsapp, username, password, role string) (InsertedID interface{}) {
+	req := new(User)
+	req.No_whatsapp = no_whatsapp
+	req.Username = username
+	req.Password = password
+	req.Role = role
+	return atdb.InsertOneDoc(mongoenv, collname, req)
 }

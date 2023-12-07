@@ -9,12 +9,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func TestUpdateGetData(t *testing.T) {
-	mconn := SetConnection("MONGOSTRING", "InformasiWisataBandung")
-	datagedung := GetAllBangunanLineString(mconn, "InformasiWisataBandung")
-	fmt.Println(datagedung)
-}
-
 func TestGeneratePasswordHash(t *testing.T) {
 	password := "secret"
 	hash, _ := HashPassword(password) // ignore error for the sake of simplicity
