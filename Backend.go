@@ -82,12 +82,12 @@ func GCFPostHandlerSIGN(token, PASETOPRIVATEKEYENV, MONGOCONNSTRINGENV, dbname, 
 
 	return GCFReturnStruct(Response)
 }
-func Registrasi(TOKEN, MONGOENV, dbname, collname string, r *http.Request) string {
+func Registrasi(TOKEN, MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) string {
 	var response BeriPesan
 	response.Status = false
 
 	// Establish MongoDB connection
-	mconn := SetConnection(MONGOENV, dbname)
+	mconn := SetConnection(MONGOCONNSTRINGENV, dbname)
 
 	// Decode user data from the request body
 	var datauser User
@@ -100,7 +100,7 @@ func Registrasi(TOKEN, MONGOENV, dbname, collname string, r *http.Request) strin
 	}
 
 	// Check if the username already exists
-	if usernameExists(MONGOENV, dbname, datauser) {
+	if usernameExists(MONGOCONNSTRINGENV, dbname, datauser) {
 		response.Message = "Username telah dipakai"
 		return GCFReturnStruct(response)
 	}
@@ -143,22 +143,48 @@ func GCFReturnStruct(DataStuct any) string {
 	jsondata, _ := json.Marshal(DataStuct)
 	return string(jsondata)
 }
-func CreateWisata(MONGOCONNSTRING, dbname, collectionname string, tempat TempatWisata) error {
-	clientOptions := options.Client().ApplyURI(MONGOCONNSTRING)
-	client, err := mongo.Connect(context.TODO(), clientOptions)
-	if err != nil {
-		return err
-	}
-	defer client.Disconnect(context.TODO())
+func CreateWisata(publickey, MONGOCONNSTRINGENV, dbname, collectionname string, r *http.Request) string {
+	var response BeriPesan
+	response.Status = false
+	var datawisata TempatWisata
+	err := json.NewDecoder(r.Body).Decode(&datawisata)
 
-	collection := client.Database(dbname).Collection(collectionname)
-
-	_, err = collection.InsertOne(context.TODO(), tempat)
 	if err != nil {
-		return err
+		response.Message = "Error parsing application/json: " + err.Error()
+		return GCFReturnStruct(response)
 	}
 
-	return nil
+	var auth User
+	header := r.Header.Get("token")
+	if header == "" {
+		response.Message = "Header login tidak ditemukan"
+		return GCFReturnStruct(response)
+	}
+
+	// Decode token to get user details
+
+	tokenusername := DecodeGetUsername(os.Getenv(publickey), header)
+	tokenrole := DecodeGetRole(os.Getenv(publickey), header)
+	auth.Username = tokenusername
+
+	if tokenusername == "" || tokenrole == "" {
+		response.Message = "Hasil decode tidak ditemukan"
+		return GCFReturnStruct(response)
+	}
+
+	// Check if the user account exists
+	if !usernameExists(MONGOCONNSTRINGENV, dbname, auth) {
+		response.Message = "Akun tidak ditemukan"
+		return GCFReturnStruct(response)
+	}
+
+	// Check if the user has admin or author privileges
+	if tokenrole != "admin" && tokenrole != "author" {
+		response.Message = "Anda tidak memiliki akses"
+		return GCFReturnStruct(response)
+	}
+
+	return GCFReturnStruct(response)
 }
 
 func ReadWisata(MONGOCONNSTRING, dbname, collectionname string) ([]TempatWisata, error) {

@@ -23,11 +23,9 @@ func HelloHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	// Set CORS headers for the main request.
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	var tempat gisbdg.TempatWisata // Membuat variabel tempat
-	err := gisbdg.CreateWisata("publickey", "MONGOSTRING", "InformasiWisataBandung", "TempatWisata", tempat, r)
-	if err != nil {
-		fmt.Fprintf(w, "Error: %s", err.Error()) // Mengonversi error ke string dan menampilkannya
-		return
-	}
-	fmt.Fprintf(w, "Success") // Jika tidak ada error
+	fmt.Fprintf(w, gisbdg.Registrasi("TOKEN", "MONGOSTRING", "InformasiWisataBandung", "Users", r))
+
+}
+func GetToken(r *http.Request) string {
+	return r.Header.Get("Authorization")
 }
