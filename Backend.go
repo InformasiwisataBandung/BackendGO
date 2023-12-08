@@ -56,7 +56,7 @@ func Otorisasi(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *http.R
 	return GCFReturnStruct(response)
 }
 
-func Login(token, PASETOPRIVATEKEYENV, MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) string {
+func LoginHandler(token, PASETOPRIVATEKEYENV, MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) string {
 	var response BeriPesan
 	response.Status = false
 
