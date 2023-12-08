@@ -16,7 +16,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func Otorisasi(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) string {
+func Otorisasi(publickey, mongoenv, dbname, collname string, r *http.Request) string {
 	var response CredentialUser
 	var auth User
 	response.Status = false
@@ -42,7 +42,7 @@ func Otorisasi(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *http.R
 	}
 
 	// Check if the user exists
-	if !usernameExists(MONGOCONNSTRINGENV, dbname, auth) {
+	if !usernameExists(mongoenv, dbname, auth) {
 		response.Message = "Akun tidak ditemukan"
 		return GCFReturnStruct(response)
 	}
@@ -56,12 +56,12 @@ func Otorisasi(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *http.R
 	return GCFReturnStruct(response)
 }
 
-func LoginHandler(token, PASETOPRIVATEKEYENV, MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) string {
+func LoginHandler(token, privatekey, mongoenv, dbname, collname string, r *http.Request) string {
 	var response BeriPesan
 	response.Status = false
 
 	// Establish MongoDB connection
-	mconn := SetConnection(MONGOCONNSTRINGENV, dbname)
+	mconn := SetConnection(mongoenv, dbname)
 
 	// Decode user data from the request body
 	var datauser User
@@ -74,7 +74,7 @@ func LoginHandler(token, PASETOPRIVATEKEYENV, MONGOCONNSTRINGENV, dbname, collna
 	}
 
 	// Check if the user account exists
-	if !usernameExists(MONGOCONNSTRINGENV, dbname, datauser) {
+	if !usernameExists(mongoenv, dbname, datauser) {
 		response.Message = "Akun tidak ditemukan"
 		return GCFReturnStruct(response)
 	}
@@ -89,7 +89,7 @@ func LoginHandler(token, PASETOPRIVATEKEYENV, MONGOCONNSTRINGENV, dbname, collna
 	user := FindUser(mconn, collname, datauser)
 
 	// Prepare and encode token
-	tokenstring, tokenerr := Encode(user.Username, user.Role, os.Getenv(PASETOPRIVATEKEYENV))
+	tokenstring, tokenerr := Encode(user.Username, user.Role, os.Getenv(privatekey))
 	if tokenerr != nil {
 		response.Message = "Gagal encode token: " + tokenerr.Error()
 		return GCFReturnStruct(response)
@@ -138,12 +138,12 @@ func GCFPostHandlerSIGN(token, PASETOPRIVATEKEYENV, MONGOCONNSTRINGENV, dbname, 
 
 	return GCFReturnStruct(Response)
 }
-func Registrasi(TOKEN, MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) string {
+func Registrasi(token, mongoenv, dbname, collname string, r *http.Request) string {
 	var response BeriPesan
 	response.Status = false
 
 	// Establish MongoDB connection
-	mconn := SetConnection(MONGOCONNSTRINGENV, dbname)
+	mconn := SetConnection(mongoenv, dbname)
 
 	// Decode user data from the request body
 	var datauser User
@@ -156,7 +156,7 @@ func Registrasi(TOKEN, MONGOCONNSTRINGENV, dbname, collname string, r *http.Requ
 	}
 
 	// Check if the username already exists
-	if usernameExists(MONGOCONNSTRINGENV, dbname, datauser) {
+	if usernameExists(mongoenv, dbname, datauser) {
 		response.Message = "Username telah dipakai"
 		return GCFReturnStruct(response)
 	}
@@ -191,7 +191,7 @@ func Registrasi(TOKEN, MONGOCONNSTRINGENV, dbname, collname string, r *http.Requ
 	}
 
 	// Make an API call to send WhatsApp message
-	atapi.PostStructWithToken[atmessage.Response]("Token", os.Getenv(TOKEN), dt, "https://api.wa.my.id/api/send/message/text")
+	atapi.PostStructWithToken[atmessage.Response]("Token", os.Getenv(token), dt, "https://api.wa.my.id/api/send/message/text")
 
 	return GCFReturnStruct(response)
 }
