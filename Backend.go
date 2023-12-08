@@ -29,7 +29,6 @@ func Otorisasi(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *http.R
 	}
 
 	// Decode token values
-
 	tokenusername := DecodeGetUsername(os.Getenv(publickey), header)
 	tokenrole := DecodeGetRole(os.Getenv(publickey), header)
 
@@ -53,6 +52,63 @@ func Otorisasi(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *http.R
 	response.Status = true
 	response.Data.Username = tokenusername
 	response.Data.Role = tokenrole
+
+	return GCFReturnStruct(response)
+}
+
+func Login(token, PASETOPRIVATEKEYENV, MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) string {
+	var response BeriPesan
+	response.Status = false
+
+	// Establish MongoDB connection
+	mconn := SetConnection(MONGOCONNSTRINGENV, dbname)
+
+	// Decode user data from the request body
+	var datauser User
+	err := json.NewDecoder(r.Body).Decode(&datauser)
+
+	// Check for JSON decoding errors
+	if err != nil {
+		response.Message = "Error parsing application/json: " + err.Error()
+		return GCFReturnStruct(response)
+	}
+
+	// Check if the user account exists
+	if !usernameExists(MONGOCONNSTRINGENV, dbname, datauser) {
+		response.Message = "Akun tidak ditemukan"
+		return GCFReturnStruct(response)
+	}
+
+	// Check if the entered password is not valid
+	if !IsPasswordValid(mconn, collname, datauser) {
+		response.Message = "Password Salah"
+		return GCFReturnStruct(response)
+	}
+
+	// Retrieve user details
+	user := FindUser(mconn, collname, datauser)
+
+	// Prepare and encode token
+	tokenstring, tokenerr := Encode(user.Username, user.Role, os.Getenv(PASETOPRIVATEKEYENV))
+	if tokenerr != nil {
+		response.Message = "Gagal encode token: " + tokenerr.Error()
+		return GCFReturnStruct(response)
+	}
+
+	// Successful login
+	response.Status = true
+	response.Token = tokenstring
+	response.Message = "Berhasil login"
+
+	// Send a WhatsApp message notifying the user about the successful login
+	var nama = user.Username
+	var nohp = user.No_whatsapp
+	dt := &wa.TextMessage{
+		To:       nohp,
+		IsGroup:  false,
+		Messages: nama + " berhasil login\nPerlu diingat sesi login hanya berlaku 2 jam",
+	}
+	atapi.PostStructWithToken[atmessage.Response]("Token", os.Getenv(token), dt, "https://api.wa.my.id/api/send/message/text")
 
 	return GCFReturnStruct(response)
 }

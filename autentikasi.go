@@ -15,7 +15,7 @@ func GenerateKey() (privatekey, publickey string) {
 	return privatekey, publickey
 }
 
-func Encode(name, username, role, privatekey string) (string, error) {
+func Encode(username, role, privatekey string) (string, error) {
 	token := paseto.NewToken()
 	token.SetIssuedAt(time.Now())
 	token.SetNotBefore(time.Now())
