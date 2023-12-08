@@ -199,7 +199,7 @@ func GCFReturnStruct(DataStuct any) string {
 	jsondata, _ := json.Marshal(DataStuct)
 	return string(jsondata)
 }
-func CreateWisata(publickey, MONGOCONNSTRINGENV, dbname, collectionname string, r *http.Request) string {
+func CreateWisata(publickey, mongoenv, dbname, collname string, r *http.Request) string {
 	var response BeriPesan
 	response.Status = false
 	var datawisata TempatWisata
@@ -229,7 +229,7 @@ func CreateWisata(publickey, MONGOCONNSTRINGENV, dbname, collectionname string, 
 	}
 
 	// Check if the user account exists
-	if !usernameExists(MONGOCONNSTRINGENV, dbname, auth) {
+	if !usernameExists(mongoenv, dbname, auth) {
 		response.Message = "Akun tidak ditemukan"
 		return GCFReturnStruct(response)
 	}
