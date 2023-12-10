@@ -75,7 +75,7 @@ type CredentialUser struct {
 	Message string `json:"message,omitempty" bson:"message,omitempty"`
 }
 type Payload struct {
-	User string    `json:"user"`
+	Username string    `json:"username"`
 	Role string    `json:"role"`
 	Exp  time.Time `json:"exp"`
 	Iat  time.Time `json:"iat"`

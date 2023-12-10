@@ -55,7 +55,7 @@ func DecodeGetUsername(publickey string, tokenstring string) string {
 	if err != nil {
 		fmt.Println("Decode DecodeGetId : ", err)
 	}
-	return payload.User
+	return payload.Username
 }
 
 func DecodeGetRole(publickey string, tokenstring string) string {
