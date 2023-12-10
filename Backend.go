@@ -202,6 +202,9 @@ func GCFReturnStruct(DataStuct any) string {
 func CreateWisata(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) string {
 	var response BeriPesan
 	response.Status = false
+
+	mconn := SetConnection(MONGOCONNSTRINGENV, dbname)
+
 	var datawisata TempatWisata
 	err := json.NewDecoder(r.Body).Decode(&datawisata)
 
@@ -238,7 +241,9 @@ func CreateWisata(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *htt
 		response.Message = "Anda tidak memiliki akses"
 		return GCFReturnStruct(response)
 	}
-
+	response.Status = true
+	CreateWisataConn(mconn, collname, datawisata)
+	response.Message = "Berhasil input data"
 	return GCFReturnStruct(response)
 }
 
