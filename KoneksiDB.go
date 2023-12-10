@@ -17,9 +17,9 @@ func SetConnection(MONGOCONNSTRINGENV, dbname string) *mongo.Database {
 	return atdb.MongoConnect(DBmongoinfo)
 }
 
-func IsPasswordValid(mongoconn *mongo.Database, collection string, userdata User) bool {
+func IsPasswordValid(MONGOCONNSTRINGENV *mongo.Database, collection string, userdata User) bool {
 	filter := bson.M{"username": userdata.Username}
-	res := atdb.GetOneDoc[User](mongoconn, collection, filter)
+	res := atdb.GetOneDoc[User](MONGOCONNSTRINGENV, collection, filter)
 	return CheckPasswordHash(userdata.Password, res.Password)
 }
 func usernameExists(MONGOCONNSTRINGENV, dbname string, userdata User) bool {
@@ -41,8 +41,8 @@ func InsertUserdata(MONGOCONNSTRINGENV *mongo.Database, collname, no_whatsapp, u
 
 // Crud Connection
 
-func CreateWisataConn(mongoconn *mongo.Database, collection string, datawisata TempatWisata) interface{} {
-	return atdb.InsertOneDoc(mongoconn, collection, datawisata)
+func CreateWisataConn(MONGOCONNSTRINGENV *mongo.Database, collection string, datawisata TempatWisata) interface{} {
+	return atdb.InsertOneDoc(MONGOCONNSTRINGENV, collection, datawisata)
 }
 
 func FindUser(MONGOCONNSTRINGENV *mongo.Database, collname string, userdata User) User {
