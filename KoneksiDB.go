@@ -41,8 +41,8 @@ func InsertUserdata(MONGOCONNSTRINGENV *mongo.Database, collname, no_whatsapp, u
 
 // Crud Connection
 
-func CreateWisataConn(MONGOCONNSTRINGENV *mongo.Database, collection string, datawisata TempatWisata) interface{} {
-	return atdb.InsertOneDoc(MONGOCONNSTRINGENV, collection, datawisata)
+func CreateWisataConn(MONGOCONNSTRINGENV *mongo.Database, collname string, datawisata TempatWisata) interface{} {
+	return atdb.InsertOneDoc(MONGOCONNSTRINGENV, collname, datawisata)
 }
 
 func FindUser(MONGOCONNSTRINGENV *mongo.Database, collname string, userdata User) User {

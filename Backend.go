@@ -209,7 +209,6 @@ func CreateWisata(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *htt
 		response.Message = "Error parsing application/json: " + err.Error()
 		return GCFReturnStruct(response)
 	}
-
 	var auth User
 	header := r.Header.Get("token")
 	if header == "" {
