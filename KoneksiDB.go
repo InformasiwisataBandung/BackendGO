@@ -45,7 +45,7 @@ func CreateWisataConn(mongoconn *mongo.Database, collection string, datawisata T
 	return atdb.InsertOneDoc(mongoconn, collection, datawisata)
 }
 
-func FindUser(mongoenv *mongo.Database, collname string, userdata User) User {
+func FindUser(MONGOCONNSTRINGENV *mongo.Database, collname string, userdata User) User {
 	filter := bson.M{"username": userdata.Username}
-	return atdb.GetOneDoc[User](mongoenv, collname, filter)
+	return atdb.GetOneDoc[User](MONGOCONNSTRINGENV, collname, filter)
 }

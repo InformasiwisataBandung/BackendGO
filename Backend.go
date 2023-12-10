@@ -16,7 +16,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func Otorisasi(publickey, mongoenv, dbname, collname string, r *http.Request) string {
+func Otorisasi(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) string {
 	var response CredentialUser
 	var auth User
 	response.Status = false
@@ -42,7 +42,7 @@ func Otorisasi(publickey, mongoenv, dbname, collname string, r *http.Request) st
 	}
 
 	// Check if the user exists
-	if !usernameExists(mongoenv, dbname, auth) {
+	if !usernameExists(MONGOCONNSTRINGENV, dbname, auth) {
 		response.Message = "Akun tidak ditemukan"
 		return GCFReturnStruct(response)
 	}
@@ -56,12 +56,12 @@ func Otorisasi(publickey, mongoenv, dbname, collname string, r *http.Request) st
 	return GCFReturnStruct(response)
 }
 
-func LoginHandler(token, privatekey, mongoenv, dbname, collname string, r *http.Request) string {
+func LoginHandler(token, privatekey, MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) string {
 	var response BeriPesan
 	response.Status = false
 
 	// Establish MongoDB connection
-	mconn := SetConnection(mongoenv, dbname)
+	mconn := SetConnection(MONGOCONNSTRINGENV, dbname)
 
 	// Decode user data from the request body
 	var datauser User
@@ -74,7 +74,7 @@ func LoginHandler(token, privatekey, mongoenv, dbname, collname string, r *http.
 	}
 
 	// Check if the user account exists
-	if !usernameExists(mongoenv, dbname, datauser) {
+	if !usernameExists(MONGOCONNSTRINGENV, dbname, datauser) {
 		response.Message = "Akun tidak ditemukan"
 		return GCFReturnStruct(response)
 	}
@@ -138,12 +138,12 @@ func GCFPostHandlerSIGN(token, PASETOPRIVATEKEYENV, MONGOCONNSTRINGENV, dbname, 
 
 	return GCFReturnStruct(Response)
 }
-func Registrasi(token, mongoenv, dbname, collname string, r *http.Request) string {
+func Registrasi(token, MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) string {
 	var response BeriPesan
 	response.Status = false
 
 	// Establish MongoDB connection
-	mconn := SetConnection(mongoenv, dbname)
+	mconn := SetConnection(MONGOCONNSTRINGENV, dbname)
 
 	// Decode user data from the request body
 	var datauser User
@@ -156,7 +156,7 @@ func Registrasi(token, mongoenv, dbname, collname string, r *http.Request) strin
 	}
 
 	// Check if the username already exists
-	if usernameExists(mongoenv, dbname, datauser) {
+	if usernameExists(MONGOCONNSTRINGENV, dbname, datauser) {
 		response.Message = "Username telah dipakai"
 		return GCFReturnStruct(response)
 	}
@@ -199,7 +199,7 @@ func GCFReturnStruct(DataStuct any) string {
 	jsondata, _ := json.Marshal(DataStuct)
 	return string(jsondata)
 }
-func CreateWisata(publickey, mongoenv, dbname, collname string, r *http.Request) string {
+func CreateWisata(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) string {
 	var response BeriPesan
 	response.Status = false
 	var datawisata TempatWisata
@@ -229,7 +229,7 @@ func CreateWisata(publickey, mongoenv, dbname, collname string, r *http.Request)
 	}
 
 	// Check if the user account exists
-	if !usernameExists(mongoenv, dbname, auth) {
+	if !usernameExists(MONGOCONNSTRINGENV, dbname, auth) {
 		response.Message = "Akun tidak ditemukan"
 		return GCFReturnStruct(response)
 	}
