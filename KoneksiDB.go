@@ -39,12 +39,21 @@ func InsertUserdata(MONGOCONNSTRINGENV *mongo.Database, collname, no_whatsapp, u
 	return atdb.InsertOneDoc(MONGOCONNSTRINGENV, collname, req)
 }
 
-// Crud Connection
+// Crud Connection Wisata
 
 func CreateWisataConn(MONGOCONNSTRINGENV *mongo.Database, collname string, datawisata TempatWisata) interface{} {
 	return atdb.InsertOneDoc(MONGOCONNSTRINGENV, collname, datawisata)
 }
 
+func UpdateWisataConn(MONGOCONNSTRINGENV *mongo.Database, collname string, datawisata TempatWisata) interface{}{
+	filter :=bson.M{"nama": datawisata.Nama}
+	return atdb.ReplaceOneDoc(MONGOCONNSTRINGENV, collname,filter,datawisata)
+}
+
+func DeleteWisataConn(MONGOCONNSTRINGENV *mongo.Database, collname string, datawisata TempatWisata) interface{}{
+	filter :=bson.M{"nama": datawisata.Nama}
+	return atdb.DeleteOneDoc(MONGOCONNSTRINGENV,collname,filter)
+}
 func FindUser(MONGOCONNSTRINGENV *mongo.Database, collname string, userdata User) User {
 	filter := bson.M{"username": userdata.Username}
 	return atdb.GetOneDoc[User](MONGOCONNSTRINGENV, collname, filter)

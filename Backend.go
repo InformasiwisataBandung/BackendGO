@@ -247,6 +247,7 @@ func CreateWisata(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *htt
 	return GCFReturnStruct(response)
 }
 
+// GET FIX
 func ReadWisata(MONGOCONNSTRING, dbname, collectionname string) ([]TempatWisata, error) {
 	clientOptions := options.Client().ApplyURI(MONGOCONNSTRING)
 	client, err := mongo.Connect(context.TODO(), clientOptions)
@@ -275,39 +276,100 @@ func ReadWisata(MONGOCONNSTRING, dbname, collectionname string) ([]TempatWisata,
 	}
 	return tempatList, nil
 }
-func UpdateWisata(MONGOCONNSTRING, dbname, collectionname string, filter bson.D, update bson.D) error {
-	clientOptions := options.Client().ApplyURI(MONGOCONNSTRING)
-	client, err := mongo.Connect(context.TODO(), clientOptions)
+func UpdateWisata(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) string {
+	var response BeriPesan
+	response.Status = false
+
+	// Koneksi
+	mconn := SetConnection(MONGOCONNSTRINGENV, dbname)
+	var auth User
+	var datawisata TempatWisata
+	err := json.NewDecoder(r.Body).Decode(&datawisata)
+
 	if err != nil {
-		return err
-	}
-	defer client.Disconnect(context.TODO())
-
-	collection := client.Database(dbname).Collection(collectionname)
-
-	_, err = collection.UpdateOne(context.TODO(), filter, update)
-	if err != nil {
-		return err
+		response.Message = "Error parsing application/json: " + err.Error()
+		return GCFReturnStruct(response)
 	}
 
-	return nil
+	// Get token and perform basic token validation
+	header := r.Header.Get("token")
+	if header == "" {
+		response.Message = "Header login tidak ditemukan"
+		return GCFReturnStruct(response)
+	}
+
+	// Decode token to get user details
+	tokenusername := DecodeGetUsername(os.Getenv(publickey), header)
+	tokenrole := DecodeGetRole(os.Getenv(publickey), header)
+	auth.Username = tokenusername
+
+	if tokenusername == "" || tokenrole == "" {
+		response.Message = "Hasil decode tidak ditemukan"
+		return GCFReturnStruct(response)
+	}
+
+	// Check if the user account exists
+	if !usernameExists(MONGOCONNSTRINGENV, dbname, auth) {
+		response.Message = "Akun tidak ditemukan"
+		return GCFReturnStruct(response)
+	}
+
+	// Check if the user has admin or author privileges
+	if tokenrole != "admin" && tokenrole != "author" {
+		response.Message = "Anda tidak memiliki akses"
+		return GCFReturnStruct(response)
+	}
+	response.Status = true
+	UpdateWisataConn(mconn, collname, datawisata)
+	response.Message = "Berhasil Update data Ya"
+	return GCFReturnStruct(response)
+
 }
-func DeleteWisata(MONGOCONNSTRING, dbname, collectionname string, filter bson.D) error {
-	clientOptions := options.Client().ApplyURI(MONGOCONNSTRING)
-	client, err := mongo.Connect(context.TODO(), clientOptions)
-	if err != nil {
-		return err
-	}
-	defer client.Disconnect(context.TODO())
+func DeleteWisata(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) string {
+	var response BeriPesan
+	response.Status = false
+	mconn := SetConnection(MONGOCONNSTRINGENV, dbname)
+	var auth User
+	var datawisata TempatWisata
+	err := json.NewDecoder(r.Body).Decode(&datawisata)
 
-	collection := client.Database(dbname).Collection(collectionname)
-
-	_, err = collection.DeleteOne(context.TODO(), filter)
 	if err != nil {
-		return err
+		response.Message = "Error parsing application/json: " + err.Error()
+		return GCFReturnStruct(response)
 	}
 
-	return nil
+	// Get token and perform basic token validation
+	header := r.Header.Get("token")
+	if header == "" {
+		response.Message = "Header login tidak ditemukan"
+		return GCFReturnStruct(response)
+	}
+
+	// Decode token to get user details
+	tokenusername := DecodeGetUsername(os.Getenv(publickey), header)
+	tokenrole := DecodeGetRole(os.Getenv(publickey), header)
+	auth.Username = tokenusername
+
+	if tokenusername == "" || tokenrole == "" {
+		response.Message = "Hasil decode tidak ditemukan"
+		return GCFReturnStruct(response)
+	}
+
+	// Check if the user account exists
+	if !usernameExists(MONGOCONNSTRINGENV, dbname, auth) {
+		response.Message = "Akun tidak ditemukan"
+		return GCFReturnStruct(response)
+	}
+
+	// Check if the user has admin or author privileges
+	if tokenrole != "admin" && tokenrole != "author" {
+		response.Message = "Anda tidak memiliki akses"
+		return GCFReturnStruct(response)
+	}
+	response.Status = true
+	DeleteWisataConn(mconn, collname, datawisata)
+	response.Message = " Menghapus " + datawisata.Nama + "dari database"
+	return GCFReturnStruct(response)
 }
 
 // Geocoding (untuk menemukan lokasi dari konten yang sudah dibuat)
