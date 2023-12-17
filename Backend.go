@@ -15,7 +15,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
-
+/* Bagian Awal */
 func Otorisasi(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) string {
 	var response CredentialUser
 	var auth User
@@ -179,7 +179,7 @@ func Registrasi(token, MONGOCONNSTRINGENV, dbname, collname string, r *http.Requ
 	response.Status = true
 	response.Message = "Berhasil input data"
 
-	// Prepare and send a WhatsApp message with registration details
+	
 	var username = datauser.Username
 	var password = datauser.Password
 	var nohp = datauser.No_whatsapp
@@ -190,15 +190,250 @@ func Registrasi(token, MONGOCONNSTRINGENV, dbname, collname string, r *http.Requ
 		Messages: "Registrasi Sukses buos, Username nya : " + username + "\nDengan Password yang dibuat adalah: " + password + "\nsimpan informasi berikut dengan baik",
 	}
 
-	// Make an API call to send WhatsApp message
+	
 	atapi.PostStructWithToken[atmessage.Response]("Token", os.Getenv(token), dt, "https://api.wa.my.id/api/send/message/text")
 
 	return GCFReturnStruct(response)
 }
+// Bagian Akhir Signin Singnup & otorisasi 
+
+// User Edit Read Delete
+
+func ReadsatuUser(publickey, MONGOCONNSTRINGENV, dbname, collname string, r*http.Request)string{
+	var response BeriPesan
+	response.Status = false
+
+	//koneksi
+	mconn := SetConnection(MONGOCONNSTRINGENV,dbname)
+	var auth User
+	var datauser User
+	err := json.NewDecoder(r.Body).Decode(&datauser)
+
+	if err != nil {
+		response.Message = "Error parsing application/json: " + err.Error()
+		return GCFReturnStruct(response)
+	}
+	header := r.Header.Get("token")
+	if header == "" {
+		response.Message = "Header token tidak ditemukan"
+		return GCFReturnStruct(response)
+	}
+	// Decode token untuk GET username dan role
+	tokenusername := DecodeGetUsername(os.Getenv(publickey), header)
+	tokenrole := DecodeGetRole(os.Getenv(publickey), header)
+	auth.Username = tokenusername
+
+	if tokenusername == "" || tokenrole == "" {
+		response.Message = "Hasil decode tidak ditemukan"
+		return GCFReturnStruct(response)
+	}
+	if !usernameExists(MONGOCONNSTRINGENV, dbname, auth) {
+		response.Message = "Akun tidak ditemukan"
+		return GCFReturnStruct(response)
+	}
+	if tokenrole != "admin" {
+		response.Message = "Anda tidak memiliki akses"
+		return GCFReturnStruct(response)
+	}
+	if usernameExists(MONGOCONNSTRINGENV,dbname,datauser){
+		// fetch wisata dari database
+		user := FindUser(mconn, collname,datauser)
+		return GCFReturnStruct(user)
+	}else{
+		response.Message = "User tidak ditemukan"
+		return GCFReturnStruct(response)
+	}
+}
+
+func ReadUserHandler(publickey, MONGOCONNSTRINGENV, dbname, collname string, r*http.Request)string{
+	var response BeriPesan
+	response.Status = false
+	// Koneksi
+	mconn := SetConnection(MONGOCONNSTRINGENV, dbname)
+	header := r.Header.Get("token")
+	if header == "" {
+		response.Message = "Header token tidak ditemukan"
+		return GCFReturnStruct(response)
+	}
+	//decode token untuk get username dan role
+	tokenusername := DecodeGetUsername(os.Getenv(publickey), header)
+	tokenrole := DecodeGetRole(os.Getenv(publickey), header)
+
+	// If expression untuk decoding 
+	if tokenusername == "" || tokenrole == "" {
+		response.Message = "Hasil decode tidak ditemukan"
+		return GCFReturnStruct(response)
+	}
+	if !usernameExists(MONGOCONNSTRINGENV, dbname, User{Username: tokenusername}) {
+		response.Message = "Tidak ada akun yang terdaftar !"
+		return GCFReturnStruct(response)
+	}
+	if tokenrole != "admin" {
+		response.Message = "Anda tidak memiliki akses"
+		return GCFReturnStruct(response)
+	}
+	// Read semua data user jika kondisi terpenuhi sebagai admin
+	datauser := ReadUser(mconn, collname)
+	return GCFReturnStruct(datauser)
+}
+
+func UpdateUser(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) string {
+	var response BeriPesan
+	response.Status = false
+
+	// Establish MongoDB connection
+	mconn := SetConnection(MONGOCONNSTRINGENV, dbname)
+
+	// Decode user data from the request body
+	var auth User
+	var datauser User
+	err := json.NewDecoder(r.Body).Decode(&datauser)
+
+	// Check for JSON decoding errors
+	if err != nil {
+		response.Message = "Error parsing application/json: " + err.Error()
+		return GCFReturnStruct(response)
+	}
+
+	// Get token and perform basic token validation
+	header := r.Header.Get("token")
+	if header == "" {
+		response.Message = "Header token tidak ditemukan"
+		return GCFReturnStruct(response)
+	}
+
+	// Decode token to get username and role
+	tokenusername := DecodeGetUsername(os.Getenv(publickey), header)
+	tokenrole := DecodeGetRole(os.Getenv(publickey), header)
+	auth.Username = tokenusername
+
+	// Check if decoding was successful
+	if tokenusername == "" || tokenrole == "" {
+		response.Message = "Hasil decode tidak ditemukan"
+		return GCFReturnStruct(response)
+	}
+
+	// Check if the user account exists
+	if !usernameExists(MONGOCONNSTRINGENV, dbname, auth) {
+		response.Message = "Akun tidak ada adalam database"
+		return GCFReturnStruct(response)
+	}
+
+	// Check if the user has admin privileges
+	if tokenrole != "admin" {
+		response.Message = "Anda tidak memiliki akses"
+		return GCFReturnStruct(response)
+	}
+
+	// Check if the username parameter is provided
+	if datauser.Username == "" {
+		response.Message = "Parameter dari function ini adalah username"
+		return GCFReturnStruct(response)
+	}
+
+	// Check if the user to be edited exists
+	if !usernameExists(MONGOCONNSTRINGENV, dbname, datauser) {
+		response.Message = "Akun yang ingin diedit tidak ditemukan"
+		return GCFReturnStruct(response)
+	}
+
+	// Hash the user's password if provided
+	if datauser.Password != "" {
+		hash, hashErr := HashPassword(datauser.Password)
+		if hashErr != nil {
+			response.Message = "Gagal Hash Password: " + hashErr.Error()
+			return GCFReturnStruct(response)
+		}
+		datauser.Password = hash
+	} else {
+		// Retrieve user details
+		user := FindUser(mconn, collname, datauser)
+		datauser.Password = user.Password
+	}
+
+	// Perform user update
+	EditUser(mconn, collname, datauser)
+
+	response.Status = true
+	response.Message = "Berhasil update " + datauser.Username + " dari database"
+	return GCFReturnStruct(response)
+}
+
+func DeleteUser(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) string{
+	var response BeriPesan
+	response.Status = false
+
+	// Establish MongoDB connection
+	mconn := SetConnection(MONGOCONNSTRINGENV, dbname)
+
+	// Decode user data from the request body
+	var auth User
+	var datauser User
+	err := json.NewDecoder(r.Body).Decode(&datauser)
+
+	// Check for JSON decoding errors
+	if err != nil {
+		response.Message = "Error parsing application/json: " + err.Error()
+		return GCFReturnStruct(response)
+	}
+
+	// Get token and perform basic token validation
+	header := r.Header.Get("token")
+	if header == "" {
+		response.Message = "Header login tidak ditemukan"
+		return GCFReturnStruct(response)
+	}
+
+	// Decode token to get username and role
+	tokenusername := DecodeGetUsername(os.Getenv(publickey), header)
+	tokenrole := DecodeGetRole(os.Getenv(publickey), header)
+	auth.Username = tokenusername
+
+	// Check if decoding was successful
+	if tokenusername == "" || tokenrole == "" {
+		response.Message = "Hasil decode tidak ditemukan"
+		return GCFReturnStruct(response)
+	}
+
+	// Check if the user account exists
+	if !usernameExists(MONGOCONNSTRINGENV, dbname, auth) {
+		response.Message = "Akun tidak ditemukan"
+		return GCFReturnStruct(response)
+	}
+
+	// Check if the user has admin privileges
+	if tokenrole != "admin" {
+		response.Message = "Anda tidak memiliki akses"
+		return GCFReturnStruct(response)
+	}
+
+	// Check if the username parameter is provided
+	if datauser.Username == "" {
+		response.Message = "Parameter dari function ini adalah username"
+		return GCFReturnStruct(response)
+	}
+
+	// Check if the user to be deleted exists
+	if !usernameExists(MONGOCONNSTRINGENV, dbname, datauser) {
+		response.Message = "Akun yang ingin dihapus tidak ditemukan"
+		return GCFReturnStruct(response)
+	}
+
+	// Perform user deletion
+	HapusUser(mconn, collname, datauser)
+
+	response.Status = true
+	response.Message = "Berhasil hapus " + datauser.Username + " dari database"
+	return GCFReturnStruct(response)
+}
+// Akhir EDIT UPDATE DELETE USER
+
 func GCFReturnStruct(DataStuct any) string {
 	jsondata, _ := json.Marshal(DataStuct)
 	return string(jsondata)
 }
+
+// WISATA
 func CreateWisata(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) string {
 	var response BeriPesan
 	response.Status = false
@@ -215,7 +450,7 @@ func CreateWisata(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *htt
 	var auth User
 	header := r.Header.Get("token")
 	if header == "" {
-		response.Message = "Header login tidak ditemukan"
+		response.Message = "Header token tidak ditemukan"
 		return GCFReturnStruct(response)
 	}
 
@@ -248,33 +483,44 @@ func CreateWisata(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *htt
 }
 
 // GET FIX
-func ReadWisata(MONGOCONNSTRING, dbname, collectionname string) ([]TempatWisata, error) {
-	clientOptions := options.Client().ApplyURI(MONGOCONNSTRING)
-	client, err := mongo.Connect(context.TODO(), clientOptions)
+func ReadWisata(MONGOCONNSTRINGENV, dbname, collename string, r *http.Request) string {
+	var response BeriPesan
+	response.Status=false
+
+	//koneksi
+	mconn := SetConnection(MONGOCONNSTRINGENV, dbname)
+
+	//ngambil semua tempat wisata
+	datawisata := GetAllWisata(mconn, dbname)
+	return GCFReturnStruct(datawisata)
+}
+func ReadOnWisata(MONGOCONNSTRINGENV,dbname,collname string, r*http.Request)string{
+	var response BeriPesan
+	response.Status = false
+
+	//koneksi
+	mconn := SetConnection(MONGOCONNSTRINGENV,dbname)
+	var datawisata TempatWisata
+	err := json.NewDecoder(r.Body).Decode(&datawisata)
+
 	if err != nil {
-		return nil, err
+		response.Message = "Error parsing application/json: " + err.Error()
+		return GCFReturnStruct(response)
 	}
-	defer client.Disconnect(context.TODO())
-
-	collection := client.Database(dbname).Collection(collectionname)
-
-	cursor, err := collection.Find(context.TODO(), bson.D{})
-	if err != nil {
-		return nil, err
+	if datawisata.Nama == "" {
+		response.Message ="Isi dengan Field Nama"
+		return GCFReturnStruct(response)
 	}
-	defer cursor.Close(context.TODO())
 
-	var tempatList []TempatWisata
-
-	for cursor.Next(context.TODO()) {
-		var tempat TempatWisata
-		err := cursor.Decode(&tempat)
-		if err != nil {
-			return nil, err
-		}
-		tempatList = append(tempatList, tempat)
+	if NamaWisataExist(MONGOCONNSTRINGENV,dbname,datawisata){
+		// fetch wisata dari database
+		wisata := FindWisat(mconn, collname,datawisata)
+		return GCFReturnStruct(wisata)
+	}else{
+		response.Message = "Belum Mendapatkan Informasi Wisata"
 	}
-	return tempatList, nil
+	return GCFReturnStruct(response)
+
 }
 func UpdateWisata(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) string {
 	var response BeriPesan
@@ -371,6 +617,8 @@ func DeleteWisata(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *htt
 	response.Message = " Menghapus " + datawisata.Nama + "dari database"
 	return GCFReturnStruct(response)
 }
+
+
 
 // Geocoding (untuk menemukan lokasi dari konten yang sudah dibuat)
 func Geocoding(MONGOCONNSTRINGENV, dbname, collectionname string, query string) ([]TempatWisata, error) {
