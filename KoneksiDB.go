@@ -16,7 +16,8 @@ func SetConnection(MONGOCONNSTRINGENV, dbname string) *mongo.Database {
 	}
 	return atdb.MongoConnect(DBmongoinfo)
 }
-//User
+
+// User
 func IsPasswordValid(MONGOCONNSTRINGENV *mongo.Database, collection string, userdata User) bool {
 	filter := bson.M{"username": userdata.Username}
 	res := atdb.GetOneDoc[User](MONGOCONNSTRINGENV, collection, filter)
@@ -40,19 +41,20 @@ func InsertUserdata(MONGOCONNSTRINGENV *mongo.Database, collname, no_whatsapp, u
 }
 
 func GetAllUser(MONGOCONNSTRINGENV *mongo.Database, collname string) []User {
-	user := atdb.GetAllDoc[[]User](MONGOCONNSTRINGENV, collname)
-	return user
+	Users := atdb.GetAllDoc[[]User](MONGOCONNSTRINGENV, collname)
+	return Users
 }
 
-func EditUser(MONGOCONNSTRINGENV *mongo.Database, collname string, datauser User) interface {}{
+func EditUser(MONGOCONNSTRINGENV *mongo.Database, collname string, datauser User) interface{} {
 	filter := bson.M{"username": datauser.Username}
 	return atdb.ReplaceOneDoc(MONGOCONNSTRINGENV, collname, filter, datauser)
 }
 
-func HapusUser(MONGOCONNSTRINGENV *mongo.Database, collname string, userdata User)interface{}{
+func HapusUser(MONGOCONNSTRINGENV *mongo.Database, collname string, userdata User) interface{} {
 	filter := bson.M{"username": userdata.Username}
-	return atdb.DeleteOneDoc(MONGOCONNSTRINGENV,collname,filter)
+	return atdb.DeleteOneDoc(MONGOCONNSTRINGENV, collname, filter)
 }
+
 // Crud Connection Wisata
 
 func CreateWisataConn(MONGOCONNSTRINGENV *mongo.Database, collname string, datawisata TempatWisata) interface{} {
@@ -83,11 +85,11 @@ func FindWisat(MONGOCONNSTRINGENV *mongo.Database, collname string, datawisata T
 	return atdb.GetOneDoc[TempatWisata](MONGOCONNSTRINGENV, collname, filter)
 }
 
-func NamaWisataExist(MONGOCONNSTRINGENV, dbname string, datawisata TempatWisata)bool{
-	mconn:= SetConnection(MONGOCONNSTRINGENV, dbname).Collection("TempatWisata")
-	filter:= bson.M{"nama": datawisata.Nama}
+func NamaWisataExist(MONGOCONNSTRINGENV, dbname string, datawisata TempatWisata) bool {
+	mconn := SetConnection(MONGOCONNSTRINGENV, dbname).Collection("TempatWisata")
+	filter := bson.M{"nama": datawisata.Nama}
 
 	var wisata TempatWisata
 	err := mconn.FindOne(context.Background(), filter).Decode(&wisata)
-	return	err == nil
+	return err == nil
 }
