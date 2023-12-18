@@ -106,7 +106,7 @@ func LoginHandler(token, privatekey, MONGOCONNSTRINGENV, dbname, collname string
 	dt := &wa.TextMessage{
 		To:       nohp,
 		IsGroup:  false,
-		Messages: nama + " berhasil login\nPerlu diingat sesi login hanya berlaku 2 jam",
+		Messages: nama + " berhasil login\n Nikmati Web Wisata di kota bandung ",
 	}
 	atapi.PostStructWithToken[atmessage.Response]("Token", os.Getenv(token), dt, "https://api.wa.my.id/api/send/message/text")
 
@@ -483,7 +483,7 @@ func CreateWisata(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *htt
 }
 
 // GET FIX
-func ReadWisata(MONGOCONNSTRINGENV, dbname, collename string, r *http.Request) string {
+func ReadWisata(MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) string {
 	var response BeriPesan
 	response.Status=false
 
@@ -491,7 +491,7 @@ func ReadWisata(MONGOCONNSTRINGENV, dbname, collename string, r *http.Request) s
 	mconn := SetConnection(MONGOCONNSTRINGENV, dbname)
 
 	//ngambil semua tempat wisata
-	datawisata := GetAllWisata(mconn, dbname)
+	datawisata := GetAllWisata(mconn, collname)
 	return GCFReturnStruct(datawisata)
 }
 func ReadOnWisata(MONGOCONNSTRINGENV,dbname,collname string, r*http.Request)string{
