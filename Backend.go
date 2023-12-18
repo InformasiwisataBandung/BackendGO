@@ -248,31 +248,40 @@ func ReadsatuUser(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *htt
 func ReadUserHandler(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) string {
 	var response BeriPesan
 	response.Status = false
-	// Koneksi
+
+	// Establish MongoDB connection
 	mconn := SetConnection(MONGOCONNSTRINGENV, dbname)
+
+	// Get token and perform basic token validation
 	header := r.Header.Get("token")
 	if header == "" {
-		response.Message = "Header token tidak ditemukan"
+		response.Message = "Header login tidak ditemukan"
 		return GCFReturnStruct(response)
 	}
-	//decode token untuk get username dan role
+
+	// Decode token to get username and role
 	tokenusername := DecodeGetUsername(os.Getenv(publickey), header)
 	tokenrole := DecodeGetRole(os.Getenv(publickey), header)
 
-	// If expression untuk decoding
+	// Check if decoding was successful
 	if tokenusername == "" || tokenrole == "" {
 		response.Message = "Hasil decode tidak ditemukan"
 		return GCFReturnStruct(response)
 	}
+
+	// Check if the user account exists
 	if !usernameExists(MONGOCONNSTRINGENV, dbname, User{Username: tokenusername}) {
-		response.Message = "Tidak ada akun yang terdaftar !"
+		response.Message = "Akun tidak ditemukan"
 		return GCFReturnStruct(response)
 	}
+
+	// Check if the user has admin privileges
 	if tokenrole != "admin" {
 		response.Message = "Anda tidak memiliki akses"
 		return GCFReturnStruct(response)
 	}
-	// Read semua data user jika kondisi terpenuhi sebagai admin
+
+	// Get all users if the user is an admin
 	datauser := ReadSemuaUser(mconn, collname)
 	return GCFReturnStruct(datauser)
 }
