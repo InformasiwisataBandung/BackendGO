@@ -206,8 +206,8 @@ func ReadsatuUser(publickey, MONGOCONNSTRINGENV, dbname, collname string, r*http
 	//koneksi
 	mconn := SetConnection(MONGOCONNSTRINGENV,dbname)
 	var auth User
-	var datauser User
-	err := json.NewDecoder(r.Body).Decode(&datauser)
+	var userdata User
+	err := json.NewDecoder(r.Body).Decode(&userdata)
 
 	if err != nil {
 		response.Message = "Error parsing application/json: " + err.Error()
@@ -235,9 +235,9 @@ func ReadsatuUser(publickey, MONGOCONNSTRINGENV, dbname, collname string, r*http
 		response.Message = "Anda tidak memiliki akses"
 		return GCFReturnStruct(response)
 	}
-	if usernameExists(MONGOCONNSTRINGENV,dbname,datauser){
+	if usernameExists(MONGOCONNSTRINGENV,dbname,userdata){
 		// fetch wisata dari database
-		user := FindUser(mconn, collname,datauser)
+		user := FindUser(mconn, collname, userdata)
 		return GCFReturnStruct(user)
 	}else{
 		response.Message = "User tidak ditemukan"
