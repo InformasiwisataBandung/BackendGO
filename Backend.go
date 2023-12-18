@@ -282,7 +282,7 @@ func ReadUserHandler(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *
 	}
 
 	// Get all users if the user is an admin
-	datauser := ReadSemuaUser(mconn, collname)
+	datauser := GetAllUser(mconn, collname)
 	return GCFReturnStruct(datauser)
 }
 
