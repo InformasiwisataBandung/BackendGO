@@ -39,7 +39,7 @@ func InsertUserdata(MONGOCONNSTRINGENV *mongo.Database, collname, no_whatsapp, u
 	return atdb.InsertOneDoc(MONGOCONNSTRINGENV, collname, req)
 }
 
-func ReadUser(MONGOCONNSTRINGENV *mongo.Database, collname string)[]User{
+func ReadSemuaUser(MONGOCONNSTRINGENV *mongo.Database, collname string) []User{
 	user:= atdb.GetAllDoc[[]User](MONGOCONNSTRINGENV, collname)
 	return user
 }

@@ -235,19 +235,14 @@ func ReadsatuUser(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *htt
 		response.Message = "Anda tidak memiliki akses"
 		return GCFReturnStruct(response)
 	}
-	if userdata.Username == "" {
-		response.Message = "Isi dengan Field Nama"
-		return GCFReturnStruct(response)
-	}
-
 	if usernameExists(MONGOCONNSTRINGENV, dbname, userdata) {
 		// fetch wisata dari database
 		user := FindUser(mconn, collname, userdata)
 		return GCFReturnStruct(user)
 	} else {
-		response.Message = "Belum Mendapatkan Informasi Wisata"
+		response.Message = "User tidak ditemukan"
+		return GCFReturnStruct(response)
 	}
-	return GCFReturnStruct(response)
 }
 
 func ReadUserHandler(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) string {
@@ -278,7 +273,7 @@ func ReadUserHandler(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *
 		return GCFReturnStruct(response)
 	}
 	// Read semua data user jika kondisi terpenuhi sebagai admin
-	datauser := ReadUser(mconn, collname)
+	datauser := ReadSemuaUser(mconn, collname)
 	return GCFReturnStruct(datauser)
 }
 
@@ -477,8 +472,8 @@ func CreateWisata(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *htt
 		return GCFReturnStruct(response)
 	}
 
-	// Check if the user has admin or author privileges
-	if tokenrole != "admin" && tokenrole != "author" {
+	// Check if the user has admin or user privileges
+	if tokenrole != "admin" && tokenrole != "user" {
 		response.Message = "Anda tidak memiliki akses"
 		return GCFReturnStruct(response)
 	}
@@ -566,8 +561,8 @@ func UpdateWisata(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *htt
 		return GCFReturnStruct(response)
 	}
 
-	// Check if the user has admin or author privileges
-	if tokenrole != "admin" && tokenrole != "author" {
+	// Check if the user has admin or user privileges
+	if tokenrole != "admin" && tokenrole != "user" {
 		response.Message = "Anda tidak memiliki akses"
 		return GCFReturnStruct(response)
 	}
@@ -613,8 +608,8 @@ func DeleteWisata(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *htt
 		return GCFReturnStruct(response)
 	}
 
-	// Check if the user has admin or author privileges
-	if tokenrole != "admin" && tokenrole != "author" {
+	// Check if the user has admin or user privileges
+	if tokenrole != "admin" && tokenrole != "user" {
 		response.Message = "Anda tidak memiliki akses"
 		return GCFReturnStruct(response)
 	}
