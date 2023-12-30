@@ -709,7 +709,7 @@ func geocode(address, apiKey string) (string, error) {
 func decodeJSON(r io.Reader, v interface{}) error {
 	return json.NewDecoder(r).Decode(v)
 }
-
+//geocoding handler
 func geocodeHandler(w http.ResponseWriter, r *http.Request) {
 	address := r.URL.Query().Get("address")
 	if address == "" {
