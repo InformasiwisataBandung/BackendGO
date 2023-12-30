@@ -685,7 +685,7 @@ func isCoordinates(input string) bool {
 	_, err := fmt.Sscanf(input, "[%f,%f]", &coordinates[0], &coordinates[1])
 	return err == nil
 }
-func geocode(address, apiKey string) (string, error) {
+func Geocode(address, apiKey string) (string, error) {
 	url := fmt.Sprintf("https://maps.googleapis.com/maps/api/geocode/json?address=%s&key=%s", address, apiKey)
 
 	response, err := http.Get(url)
@@ -710,7 +710,7 @@ func decodeJSON(r io.Reader, v interface{}) error {
 	return json.NewDecoder(r).Decode(v)
 }
 //geocoding handler
-func geocodeHandler(w http.ResponseWriter, r *http.Request) {
+func GeocodeHandler(w http.ResponseWriter, r *http.Request) {
 	address := r.URL.Query().Get("address")
 	if address == "" {
 		http.Error(w, "Missing 'address' parameter", http.StatusBadRequest)
@@ -723,7 +723,7 @@ func geocodeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := geocode(address, apiKey)
+	result, err := Geocode(address, apiKey)
 	if err != nil {
 		http.Error(w, "Geocoding error", http.StatusInternalServerError)
 		return
