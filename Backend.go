@@ -719,13 +719,13 @@ func GeocodeHandler(w http.ResponseWriter, r *http.Request) {
 
 	apiKey := os.Getenv("GOOGLE_MAPS_API_KEY")
 	if apiKey == "" {
-		http.Error(w, "Missing Google Maps API key", http.StatusInternalServerError)
+		http.Error(w, "API SALAH COY", http.StatusInternalServerError)
 		return
 	}
 
 	result, err := Geocode(address, apiKey)
 	if err != nil {
-		http.Error(w, "Geocoding error", http.StatusInternalServerError)
+		http.Error(w, "Format Geocoding Salah", http.StatusInternalServerError)
 		return
 	}
 
