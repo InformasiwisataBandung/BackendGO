@@ -8,7 +8,6 @@ require (
 	github.com/aiteung/atapi v0.1.1
 	github.com/aiteung/atdb v0.1.1
 	github.com/aiteung/atmessage v0.1.0
-	github.com/tidwall/gjson v1.17.0
 	github.com/whatsauth/wa v0.3.9
 	github.com/whatsauth/watoken v0.1.3
 	go.mongodb.org/mongo-driver v1.12.1
@@ -40,8 +39,6 @@ require (
 	github.com/montanaflynn/stats v0.7.1 // indirect
 	github.com/puzpuzpuz/xsync/v3 v3.0.2 // indirect
 	github.com/rs/xid v1.5.0 // indirect
-	github.com/tidwall/match v1.1.1 // indirect
-	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
