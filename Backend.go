@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 
@@ -683,4 +684,51 @@ func isCoordinates(input string) bool {
 	var coordinates [2]float64
 	_, err := fmt.Sscanf(input, "[%f,%f]", &coordinates[0], &coordinates[1])
 	return err == nil
+}
+func geocode(address, apiKey string) (string, error) {
+	url := fmt.Sprintf("https://maps.googleapis.com/maps/api/geocode/json?address=%s&key=%s", address, apiKey)
+
+	response, err := http.Get(url)
+	if err != nil {
+		return "", err
+	}
+	defer response.Body.Close()
+
+	var result map[string]interface{}
+	if err := decodeJSON(response.Body, &result); err != nil {
+		return "", err
+	}
+
+	geometry := result["results"].([]interface{})[0].(map[string]interface{})["geometry"].(map[string]interface{})["location"].(map[string]interface{})
+	lat := fmt.Sprintf("%v", geometry["lat"])
+	lng := fmt.Sprintf("%v", geometry["lng"])
+
+	return fmt.Sprintf("Latitude: %s, Longitude: %s", lat, lng), nil
+}
+
+func decodeJSON(r io.Reader, v interface{}) error {
+	return json.NewDecoder(r).Decode(v)
+}
+
+func geocodeHandler(w http.ResponseWriter, r *http.Request) {
+	address := r.URL.Query().Get("address")
+	if address == "" {
+		http.Error(w, "Missing 'address' parameter", http.StatusBadRequest)
+		return
+	}
+
+	apiKey := os.Getenv("GOOGLE_MAPS_API_KEY")
+	if apiKey == "" {
+		http.Error(w, "Missing Google Maps API key", http.StatusInternalServerError)
+		return
+	}
+
+	result, err := geocode(address, apiKey)
+	if err != nil {
+		http.Error(w, "Geocoding error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	fmt.Fprintf(w, `{"result": "%s"}`, result)
 }
