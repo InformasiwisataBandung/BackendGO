@@ -136,3 +136,8 @@ SendPost UpdateWisata
     "message": "Data updated successfully"
 }
 ```
+#### •Update 21-10-2023 (Fix GeoCoding)
+Parameters
+```
+address = GedungSate
+```
