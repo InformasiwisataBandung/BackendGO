@@ -93,3 +93,43 @@ func NamaWisataExist(MONGOCONNSTRINGENV, dbname string, datawisata TempatWisata)
 	err := mconn.FindOne(context.Background(), filter).Decode(&wisata)
 	return err == nil
 }
+
+// Crud Komentar Takis
+func InsertKomentar(MONGOCONNSTRINGENV *mongo.Database, collname string, datakomentar Komentar) interface{} {
+	return atdb.InsertOneDoc(MONGOCONNSTRINGENV, collname, datakomentar)
+}
+
+// Read
+
+func GetAllKomentar(MONGOCONNSTRINGENV *mongo.Database, collname string) []Komentar {
+	komentar := atdb.GetAllDoc[[]Komentar](MONGOCONNSTRINGENV, collname)
+	return komentar
+}
+
+func FindKomentar(MONGOCONNSTRINGENV *mongo.Database, collname string, datakomentar Komentar) Komentar {
+	filter := bson.M{"id": datakomentar.ID}
+	return atdb.GetOneDoc[Komentar](MONGOCONNSTRINGENV, collname, filter)
+}
+
+func idKomentarExists(MONGOCONNSTRINGENV, dbname string, datakomentar Komentar) bool {
+	mconn := SetConnection(MONGOCONNSTRINGENV, dbname).Collection("komentar")
+	filter := bson.M{"id": datakomentar.ID}
+
+	var komentar Komentar
+	err := mconn.FindOne(context.Background(), filter).Decode(&komentar)
+	return err == nil
+}
+
+// Update
+
+func EditKomentar(MONGOCONNSTRINGENV *mongo.Database, collname string, datakomentar Komentar) interface{} {
+	filter := bson.M{"id": datakomentar.ID}
+	return atdb.ReplaceOneDoc(MONGOCONNSTRINGENV, collname, filter, datakomentar)
+}
+
+// Delete
+
+func DeleteKomentar(MONGOCONNSTRINGENV *mongo.Database, collname string, datakomentar Komentar) interface{} {
+	filter := bson.M{"id": datakomentar.ID}
+	return atdb.DeleteOneDoc(MONGOCONNSTRINGENV, collname, filter)
+}

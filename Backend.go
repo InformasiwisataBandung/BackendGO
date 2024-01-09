@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/aiteung/atapi"
 	"github.com/aiteung/atmessage"
@@ -629,7 +630,290 @@ func DeleteWisata(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *htt
 	return GCFReturnStruct(response)
 }
 
-// Geocoding (untuk menemukan lokasi dari konten yang sudah dibuat)
+// Komentar
+
+func AddBerita(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) string {
+	var response BeriPesan
+	response.Status = false
+
+	mconn := SetConnection(MONGOCONNSTRINGENV, dbname)
+
+	var datakomentar Komentar
+	var datawisata TempatWisata
+
+	var auth User
+	err := json.NewDecoder(r.Body).Decode(&datakomentar)
+
+	currentTime := time.Now()
+	timeStringKomentar := currentTime.Format("January 2, 2024")
+
+	if err != nil {
+		response.Message = "Error parsing application/json: " + err.Error()
+		return GCFReturnStruct(response)
+	}
+	header := r.Header.Get("token")
+	if header == "" {
+		response.Status = true
+		response.Message = "Berhasil Input data tanpa login"
+		datakomentar.Name = "Anonymous"
+		datakomentar.Tanggal = timeStringKomentar
+		InsertKomentar(mconn, collname, datakomentar)
+		return GCFReturnStruct(response)
+	}
+	// Decode token to get user details
+	tokenusername := DecodeGetUsername(os.Getenv(publickey), header)
+	tokenrole := DecodeGetRole(os.Getenv(publickey), header)
+
+	auth.Username = tokenusername
+
+	if tokenusername == "" || tokenrole == "" {
+		response.Message = "Hasil decode tidak ditemukan"
+		return GCFReturnStruct(response)
+	}
+
+	// Check if the user exists
+	if !usernameExists(MONGOCONNSTRINGENV, dbname, auth) {
+		response.Message = "Akun tidak ditemukan"
+		return GCFReturnStruct(response)
+	}
+
+	// Check if the komentar ID parameter is provided
+	if datakomentar.ID == "" {
+		response.Message = "Parameter dari function ini adalah ID"
+		return GCFReturnStruct(response)
+	}
+
+	// Check if the komentar ID exists
+	if idKomentarExists(MONGOCONNSTRINGENV, dbname, datakomentar) {
+		response.Message = "ID telah ada"
+		return GCFReturnStruct(response)
+	}
+
+	// Check if the berita ID parameter is provided
+	if datakomentar.ID_Komentar == "" {
+		response.Message = "Parameter dari function ini adalah ID Berita"
+		return GCFReturnStruct(response)
+	}
+
+	// Set berita ID from komentar data
+	datakomentar.ID = datakomentar.ID_Komentar
+
+	// Check if the berita exists
+	if !NamaWisataExist(MONGOCONNSTRINGENV, dbname, datawisata) {
+		response.Message = "Berita tidak ditemukan"
+		return GCFReturnStruct(response)
+	}
+
+	// Insert the komentar data
+	response.Status = true
+	datakomentar.Name = tokenusername
+	datakomentar.Tanggal = timeStringKomentar
+	InsertKomentar(mconn, collname, datakomentar)
+	response.Message = "Berhasil Input data"
+
+	return GCFReturnStruct(response)
+
+}
+func ReadOneKomentar(MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) string {
+	var response BeriPesan
+	response.Status = false
+
+	// koneksi
+	mconn := SetConnection(MONGOCONNSTRINGENV, dbname)
+	var datakomentar Komentar
+
+	err := json.NewDecoder(r.Body).Decode(&datakomentar)
+	if err != nil {
+		response.Message = "Error parsing application/json: " + err.Error()
+		return GCFReturnStruct(response)
+	}
+
+	// Check if the komentar ID parameter is provided
+	if datakomentar.ID == "" {
+		response.Message = "Parameter dari function ini adalah ID"
+		return GCFReturnStruct(response)
+	}
+
+	// Check if the komentar exists
+	if !idKomentarExists(MONGOCONNSTRINGENV, dbname, datakomentar) {
+		response.Message = "Komentar tidak ditemukan"
+		return GCFReturnStruct(response)
+	}
+
+	// Find and return the komentar
+	komentar := FindKomentar(mconn, collname, datakomentar)
+	return GCFReturnStruct(komentar)
+}
+func AmbilSemuaKomentar(MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) string {
+	// Initialize response
+	var response BeriPesan
+	response.Status = false
+
+	// Establish MongoDB connection
+	mconn := SetConnection(MONGOCONNSTRINGENV, dbname)
+
+	// Get all komentar data
+	datakomentar := GetAllKomentar(mconn, collname)
+	return GCFReturnStruct(datakomentar)
+}
+func UpdateKomentar(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) string {
+	// Inisialisasi respons dengan status awal false
+	var response BeriPesan
+	response.Status = false
+
+	// Set up koneksi MongoDB
+	mconn := SetConnection(MONGOCONNSTRINGENV, dbname)
+
+	// Inisialisasi struktur User dan Komentar
+	var auth User
+	var datakomentar Komentar
+
+	// Decode body request menjadi struktur Komentar
+	err := json.NewDecoder(r.Body).Decode(&datakomentar)
+
+	// Check for JSON decoding errors
+	if err != nil {
+		response.Message = "Error parsing application/json: " + err.Error()
+		return GCFReturnStruct(response)
+	}
+
+	// Ambil token dari header request
+	header := r.Header.Get("token")
+	if header == "" {
+		response.Message = "Header login tidak ditemukan"
+		return GCFReturnStruct(response)
+	}
+
+	// Decode informasi user dari token
+	
+	tokenusername := DecodeGetUsername(os.Getenv(publickey), header)
+	tokenrole := DecodeGetRole(os.Getenv(publickey), header)
+
+	// Set informasi user untuk validasi
+	auth.Username = tokenusername
+
+	// Validasi informasi user kosong
+	if tokenusername == "" || tokenrole == "" {
+		response.Message = "Hasil decode tidak ditemukan"
+		return GCFReturnStruct(response)
+	}
+
+	// Validasi keberadaan user di database
+	if !usernameExists(MONGOCONNSTRINGENV, dbname, auth) {
+		response.Message = "Akun tidak ditemukan"
+		return GCFReturnStruct(response)
+	}
+
+	// Validasi parameter yang diperlukan
+	if datakomentar.ID == "" {
+		response.Message = "Parameter dari function ini adalah id"
+		return GCFReturnStruct(response)
+	}
+
+	// Validasi keberadaan komentar di database
+	if !idKomentarExists(MONGOCONNSTRINGENV, dbname, datakomentar) {
+		response.Message = "Komentar tidak ditemukan"
+		return GCFReturnStruct(response)
+	}
+
+	// Temukan informasi komentator dari database
+	namakomentator := FindKomentar(mconn, collname, datakomentar)
+
+	// Validasi apakah user memiliki akses (admin atau pemilik komentar)
+	if tokenusername != namakomentator.Name {
+		response.Message = "Anda tidak memiliki akses"
+		return GCFReturnStruct(response)
+	}
+
+	// Lakukan edit pada komentar
+	datakomentar.ID_Komentar = namakomentator.ID_Komentar
+	datakomentar.Tanggal = namakomentator.Tanggal
+	EditKomentar(mconn, collname, datakomentar)
+
+	// Set status respons menjadi true dan tambahkan informasi pada pesan
+	response.Status = true
+	response.Message = "Berhasil update " + datakomentar.ID + " dari database"
+
+	return GCFReturnStruct(response)
+}
+func HapusKomentar(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) string {
+	// Initialize response
+	var response BeriPesan
+	response.Status = false
+
+	// Establish MongoDB connection
+	mconn := SetConnection(MONGOCONNSTRINGENV, dbname)
+
+	// Initialize auth and datakomentar
+	var auth User
+	var datakomentar Komentar
+
+	// Decode JSON request body into datakomentar
+	err := json.NewDecoder(r.Body).Decode(&datakomentar)
+
+	// Check for JSON decoding errors
+	if err != nil {
+		response.Message = "Error parsing application/json: " + err.Error()
+		return GCFReturnStruct(response)
+	}
+
+	// Get token from request header
+	header := r.Header.Get("token")
+	if header == "" {
+		response.Message = "Header login tidak ditemukan"
+		return GCFReturnStruct(response)
+	}
+
+	// Decode user information from the token
+	tokenusername := DecodeGetUsername(os.Getenv(publickey), header)
+	tokenrole := DecodeGetRole(os.Getenv(publickey), header)
+
+	auth.Username = tokenusername
+
+	if tokenusername == "" || tokenrole == "" {
+		response.Message = "Hasil decode tidak ditemukan"
+		return GCFReturnStruct(response)
+	}
+
+	// Check if the user exists
+	if !usernameExists(MONGOCONNSTRINGENV, dbname, auth) {
+		response.Message = "Akun tidak ditemukan"
+		return GCFReturnStruct(response)
+	}
+
+	// Find namakomentator based on ID
+	namakomentator := FindKomentar(mconn, collname, datakomentar)
+
+	// Check user role for authorization
+	if !(tokenrole == "admin" || tokenusername == namakomentator.Name) {
+		response.Message = "Anda tidak memiliki akses"
+		return GCFReturnStruct(response)
+	}
+
+	// Check if ID is provided
+	if datakomentar.ID == "" {
+		response.Message = "Parameter dari function ini adalah id"
+		return GCFReturnStruct(response)
+	}
+
+	// Check if the komentar exists
+	if !idKomentarExists(MONGOCONNSTRINGENV, dbname, datakomentar) {
+		response.Message = "Komentar tidak ditemukan"
+		return GCFReturnStruct(response)
+	}
+
+	// Delete the komentar
+	DeleteKomentar(mconn, collname, datakomentar)
+
+	// Set response status and message
+	response.Status = true
+	response.Message = "Berhasil hapus " + datakomentar.ID + " dari database"
+
+	return GCFReturnStruct(response)
+}
+
+
+// Geocoding (untuk menemukan lokasi dari konten yang sudah dibuat Local host)
 func Geocoding(MONGOCONNSTRINGENV, dbname, collectionname string, query string) ([]TempatWisata, error) {
 	clientOptions := options.Client().ApplyURI(MONGOCONNSTRINGENV)
 	client, err := mongo.Connect(context.TODO(), clientOptions)
@@ -709,7 +993,8 @@ func Geocode(address, apiKey string) (string, error) {
 func decodeJSON(r io.Reader, v interface{}) error {
 	return json.NewDecoder(r).Decode(v)
 }
-//geocoding handler
+
+// geocoding handler
 func GeocodeHandler(w http.ResponseWriter, r *http.Request) {
 	address := r.URL.Query().Get("address")
 	if address == "" {

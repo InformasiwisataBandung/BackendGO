@@ -76,13 +76,20 @@ type CredentialUser struct {
 }
 type Payload struct {
 	Username string    `json:"username"`
-	Role string    `json:"role"`
-	Exp  time.Time `json:"exp"`
-	Iat  time.Time `json:"iat"`
-	Nbf  time.Time `json:"nbf"`
+	Role     string    `json:"role"`
+	Exp      time.Time `json:"exp"`
+	Iat      time.Time `json:"iat"`
+	Nbf      time.Time `json:"nbf"`
 }
 type BeriPesan struct {
 	Status  bool   `json:"status" bson:"status"`
 	Message string `json:"message" bson:"message"`
 	Token   string `json:"token,omitempty" bson:"token,omitempty"`
+}
+type Komentar struct {
+	ID        string `json:"id" bson:"id"`
+	ID_Komentar string `json:"id_komentar" bson:"id_komentar"`
+	Name      string `json:"name" bson:"name"`
+	Tanggal   string `json:"tanggal" bson:"tanggal"`
+	Komentar  string `json:"komentar" bson:"komentar"`
 }
