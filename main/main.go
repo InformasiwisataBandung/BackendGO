@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
 	gisbdg "github.com/InformasiwisataBandung/BackendGO"
@@ -24,9 +25,7 @@ func HelloHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Set CORS headers for the main request.
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-
-	// Call GeocodeHandler from BackendGO package
-	gisbdg.GeocodeHandler(w, r)
+	fmt.Fprintf(w, gisbdg.AddBerita("publickey", "MONGOCONNSTRINGENV", "InformasiWisataBandung", "Komentar", r))
 }
 
 func GetToken(r *http.Request) string {

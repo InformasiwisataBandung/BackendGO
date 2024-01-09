@@ -632,7 +632,7 @@ func DeleteWisata(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *htt
 
 // Komentar
 
-func AddBerita(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) string {
+func AddKomentar(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) string {
 	var response BeriPesan
 	response.Status = false
 
