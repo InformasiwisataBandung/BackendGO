@@ -826,6 +826,7 @@ func UpdateKomentar(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *h
 	}
 
 	// Lakukan edit pada komentar
+	datakomentar.Name = tokenusername
 	datakomentar.Nama_Wisata = namakomentator.Nama_Wisata
 	datakomentar.Tanggal = namakomentator.Tanggal
 	EditKomentar(mconn, collname, datakomentar)
