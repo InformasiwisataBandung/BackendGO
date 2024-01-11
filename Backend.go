@@ -689,7 +689,7 @@ func AddKomentar(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *http
 		return GCFReturnStruct(response)
 	}
 
-	// Check if the berita ID parameter is provided
+	// Check if the Tempat Wisata Nama parameter is provided
 	if datakomentar.Nama_Wisata == "" {
 		response.Message = "Parameter dari function ini adalah ID Berita"
 		return GCFReturnStruct(response)
@@ -698,7 +698,7 @@ func AddKomentar(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *http
 	// Set Tempatwisata Nama from komentar data
 	datawisata.Nama = datakomentar.Nama_Wisata
 
-	// Check if the berita exists
+	// Check if the Tempat Wisata exists
 	if !NamaWisataExist(MONGOCONNSTRINGENV, dbname, datawisata) {
 		response.Message = "Tempat wisata tidak ditemukan"
 		return GCFReturnStruct(response)
