@@ -112,7 +112,7 @@ func FindKomentar(MONGOCONNSTRINGENV *mongo.Database, collname string, datakomen
 }
 
 func idKomentarExists(MONGOCONNSTRINGENV, dbname string, datakomentar Komentar) bool {
-	mconn := SetConnection(MONGOCONNSTRINGENV, dbname).Collection("komentar")
+	mconn := SetConnection(MONGOCONNSTRINGENV, dbname).Collection("Komentar")
 	filter := bson.M{"id": datakomentar.ID}
 
 	var komentar Komentar
