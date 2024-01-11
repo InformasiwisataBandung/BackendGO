@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/aiteung/atapi"
@@ -1011,6 +1012,62 @@ func GeocodeHandler(w http.ResponseWriter, r *http.Request) {
 	result, err := Geocode(address, apiKey)
 	if err != nil {
 		http.Error(w, "Format Geocoding Salah", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	fmt.Fprintf(w, `{"result": "%s"}`, result)
+}
+
+// Reverse Geocoding
+func ReverseGeocode(lat, lng float64, apiKey string) (string, error) {
+	url := fmt.Sprintf("https://maps.googleapis.com/maps/api/geocode/json?latlng=%f,%f&key=%s", lat, lng, apiKey)
+
+	response, err := http.Get(url)
+	if err != nil {
+		return "", err
+	}
+	defer response.Body.Close()
+
+	var result map[string]interface{}
+	if err := decodeJSON(response.Body, &result); err != nil {
+		return "", err
+	}
+
+	address := result["results"].([]interface{})[0].(map[string]interface{})["formatted_address"].(string)
+	return address, nil
+}
+
+func ReverseGeocodeHandler(w http.ResponseWriter, r *http.Request) {
+	latStr := r.URL.Query().Get("lat")
+	lngStr := r.URL.Query().Get("lng")
+
+	if latStr == "" || lngStr == "" {
+		http.Error(w, "Isikan Parameter lintang dan bujur(latitude, longitude)", http.StatusBadRequest)
+		return
+	}
+
+	lat, err := strconv.ParseFloat(latStr, 64)
+	if err != nil {
+		http.Error(w, "Invalid latitude parameter", http.StatusBadRequest)
+		return
+	}
+
+	lng, err := strconv.ParseFloat(lngStr, 64)
+	if err != nil {
+		http.Error(w, "Invalid longitude parameter", http.StatusBadRequest)
+		return
+	}
+
+	apiKey := os.Getenv("GOOGLE_MAPS_API_KEY")
+	if apiKey == "" {
+		http.Error(w, "API Google Maps Kosong / salah coyz", http.StatusInternalServerError)
+		return
+	}
+
+	result, err := ReverseGeocode(lat, lng, apiKey)
+	if err != nil {
+		http.Error(w, "Reverse geocoding error", http.StatusInternalServerError)
 		return
 	}
 
