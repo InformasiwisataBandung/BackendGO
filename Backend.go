@@ -690,17 +690,17 @@ func AddKomentar(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *http
 	}
 
 	// Check if the berita ID parameter is provided
-	if datakomentar.ID_Komentar == "" {
+	if datakomentar.Nama_Wisata == "" {
 		response.Message = "Parameter dari function ini adalah ID Berita"
 		return GCFReturnStruct(response)
 	}
 
-	// Set berita ID from komentar data
-	datakomentar.ID = datakomentar.ID_Komentar
+	// Set Tempatwisata Nama from komentar data
+	datawisata.Nama = datakomentar.Nama_Wisata
 
 	// Check if the berita exists
 	if !NamaWisataExist(MONGOCONNSTRINGENV, dbname, datawisata) {
-		response.Message = "Berita tidak ditemukan"
+		response.Message = "Tempat wisata tidak ditemukan"
 		return GCFReturnStruct(response)
 	}
 
@@ -785,7 +785,7 @@ func UpdateKomentar(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *h
 	}
 
 	// Decode informasi user dari token
-	
+
 	tokenusername := DecodeGetUsername(os.Getenv(publickey), header)
 	tokenrole := DecodeGetRole(os.Getenv(publickey), header)
 
@@ -826,7 +826,7 @@ func UpdateKomentar(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *h
 	}
 
 	// Lakukan edit pada komentar
-	datakomentar.ID_Komentar = namakomentator.ID_Komentar
+	datakomentar.Nama_Wisata = namakomentator.Nama_Wisata
 	datakomentar.Tanggal = namakomentator.Tanggal
 	EditKomentar(mconn, collname, datakomentar)
 
@@ -911,7 +911,6 @@ func HapusKomentar(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *ht
 
 	return GCFReturnStruct(response)
 }
-
 
 // Geocoding (untuk menemukan lokasi dari konten yang sudah dibuat Local host)
 func Geocoding(MONGOCONNSTRINGENV, dbname, collectionname string, query string) ([]TempatWisata, error) {

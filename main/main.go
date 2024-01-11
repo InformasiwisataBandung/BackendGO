@@ -25,7 +25,7 @@ func HelloHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Set CORS headers for the main request.
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	fmt.Fprintf(w, gisbdg.AddBerita("publickey", "MONGOCONNSTRINGENV", "InformasiWisataBandung", "Komentar", r))
+	fmt.Fprintf(w, gisbdg.AddKomentar("publickey", "MONGOCONNSTRINGENV", "InformasiWisataBandung", "Komentar", r))
 }
 
 func GetToken(r *http.Request) string {

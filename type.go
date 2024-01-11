@@ -56,13 +56,13 @@ type Credential struct {
 	Message string `json:"message,omitempty" bson:"message,omitempty"`
 }
 type TempatWisata struct {
-	Nama      string  `json:"nama"`
-	Jenis     string  `json:"jenis"`
-	Deskripsi string  `json:"deskripsi"`
-	Lokasi    Lokasi  `json:"lokasi"`
-	Alamat    string  `json:"alamat"`
-	Gambar    string  `json:"gambar"`
-	Rating    float64 `json:"rating"`
+	Nama      string  `json:"nama"  bson:"nama"`
+	Jenis     string  `json:"jenis" bson:"jenis"`
+	Deskripsi string  `json:"deskripsi" bson:"deskripsi"`
+	Lokasi    Lokasi  `json:"lokasi" bson:"lokasi"`
+	Alamat    string  `json:"alamat" bson:"alamat"`
+	Gambar    string  `json:"gambar" bson:"gambar"`
+	Rating    float64 `json:"rating" bson:"rating"`
 }
 
 type Lokasi struct {
@@ -87,9 +87,9 @@ type BeriPesan struct {
 	Token   string `json:"token,omitempty" bson:"token,omitempty"`
 }
 type Komentar struct {
-	ID        string `json:"id" bson:"id"`
-	ID_Komentar string `json:"id_komentar" bson:"id_komentar"`
-	Name      string `json:"name" bson:"name"`
-	Tanggal   string `json:"tanggal" bson:"tanggal"`
-	Komentar  string `json:"komentar" bson:"komentar"`
+	ID          string `json:"id" bson:"id"`
+	Nama_Wisata string `json:"nama_wisata" bson:"nama_wisata"`
+	Name        string `json:"name" bson:"name"`
+	Tanggal     string `json:"tanggal" bson:"tanggal"`
+	Komentar    string `json:"komentar" bson:"komentar"`
 }
