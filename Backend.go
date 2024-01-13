@@ -88,10 +88,7 @@ func LoginHandler(token, privatekey, MONGOCONNSTRINGENV, dbname, collname string
 		response.Message = "Password Salah"
 		return GCFReturnStruct(response)
 	}
-	if NomorWAExists(MONGOCONNSTRINGENV, dbname, datauser) {
-		response.Message = "No whatsapp sudah digunakan"
-		return GCFReturnStruct(response)
-	}
+
 	// Retrieve user details
 	user := FindUser(mconn, collname, datauser)
 
@@ -165,6 +162,10 @@ func Registrasi(token, MONGOCONNSTRINGENV, dbname, collname string, r *http.Requ
 	// Check if the username already exists
 	if usernameExists(MONGOCONNSTRINGENV, dbname, datauser) {
 		response.Message = "Username telah dipakai"
+		return GCFReturnStruct(response)
+	}
+	if NomorWAExists(MONGOCONNSTRINGENV, dbname, datauser) {
+		response.Message = "No whatsapp sudah digunakan"
 		return GCFReturnStruct(response)
 	}
 
