@@ -88,7 +88,10 @@ func LoginHandler(token, privatekey, MONGOCONNSTRINGENV, dbname, collname string
 		response.Message = "Password Salah"
 		return GCFReturnStruct(response)
 	}
-
+	if NomorWAExists(MONGOCONNSTRINGENV, dbname, datauser) {
+		response.Message = "No whatsapp sudah digunakan"
+		return GCFReturnStruct(response)
+	}
 	// Retrieve user details
 	user := FindUser(mconn, collname, datauser)
 
@@ -110,7 +113,7 @@ func LoginHandler(token, privatekey, MONGOCONNSTRINGENV, dbname, collname string
 	dt := &wa.TextMessage{
 		To:       nohp,
 		IsGroup:  false,
-		Messages: nama + " berhasil login\nNikmati Web Wisata di kota bandung\nIni token Untuk melanjutkan Proses selanjutnya yah  " +"\n"+ tokenstring,
+		Messages: nama + " berhasil login\nNikmati Web Wisata di kota bandung\nIni token Untuk melanjutkan Proses selanjutnya yah  " + "\n" + tokenstring,
 	}
 	atapi.PostStructWithToken[atmessage.Response]("Token", os.Getenv(token), dt, "https://api.wa.my.id/api/send/message/text")
 

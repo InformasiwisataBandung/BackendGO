@@ -31,6 +31,15 @@ func usernameExists(MONGOCONNSTRINGENV, dbname string, userdata User) bool {
 	err := mconn.FindOne(context.Background(), filter).Decode(&user)
 	return err == nil
 }
+
+func NomorWAExists(MONGOCONNSTRINGENV, dbname string, userdata User) bool {
+	mconn := SetConnection(MONGOCONNSTRINGENV, dbname).Collection("Users")
+	filter := bson.M{"no_whatsapp": userdata.No_whatsapp}
+
+	var user User
+	err := mconn.FindOne(context.Background(), filter).Decode(&user)
+	return err == nil
+}
 func InsertUserdata(MONGOCONNSTRINGENV *mongo.Database, collname, no_whatsapp, username, password, role string) (InsertedID interface{}) {
 	req := new(User)
 	req.No_whatsapp = no_whatsapp
