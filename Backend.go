@@ -110,7 +110,7 @@ func LoginHandler(token, privatekey, MONGOCONNSTRINGENV, dbname, collname string
 	dt := &wa.TextMessage{
 		To:       nohp,
 		IsGroup:  false,
-		Messages: nama + " berhasil login\n Nikmati Web Wisata di kota bandung ",
+		Messages: nama + " berhasil login\n Nikmati Web Wisata di kota bandung " +" Ini token Untuk melanjutkan Proses selanjutnya yah  " + tokenstring,
 	}
 	atapi.PostStructWithToken[atmessage.Response]("Token", os.Getenv(token), dt, "https://api.wa.my.id/api/send/message/text")
 
