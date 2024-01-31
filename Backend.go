@@ -527,24 +527,29 @@ func CreateWisata(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *htt
 	return GCFReturnStruct(response)
 }
 func UploadGambar(r *http.Request) (string, error) {
-	file, handler, err := r.FormFile("gambar")
+	file, _, err := r.FormFile("gambar")
 	if err != nil {
 		return "", err
 	}
 	defer file.Close()
 
-	tempFile, err := ioutil.TempFile("temp-images", handler.Filename)
+	tempDir, err := ioutil.TempDir("", "temp-images")
+	if err != nil {
+		return "", err
+	}
+	defer os.RemoveAll(tempDir)
+
+	tempFile, err := ioutil.TempFile(tempDir, "gambar-*.jpg")
 	if err != nil {
 		return "", err
 	}
 	defer tempFile.Close()
 
-	fileBytes, err := ioutil.ReadAll(file)
+	_, err = io.Copy(tempFile, file)
 	if err != nil {
 		return "", err
 	}
 
-	tempFile.Write(fileBytes)
 	return tempFile.Name(), nil
 }
 
