@@ -486,8 +486,21 @@ func CreateWisata(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *htt
 	datawisata.Gambar = gambarPath // Menggunakan path gambar yang telah diunggah
 
 	// Parsing koordinat lokasi
-	latitude, _ := strconv.ParseFloat(r.FormValue("lokasi.latitude"), 64)
-	longitude, _ := strconv.ParseFloat(r.FormValue("lokasi.longitude"), 64)
+	latitudeStr := r.Form.Get("lokasi.latitude")
+	longitudeStr := r.Form.Get("lokasi.longitude")
+
+	latitude, err := strconv.ParseFloat(latitudeStr, 64)
+	if err != nil {
+		response.Message = "Error parsing latitude: " + err.Error()
+		return GCFReturnStruct(response)
+	}
+
+	longitude, err := strconv.ParseFloat(longitudeStr, 64)
+	if err != nil {
+		response.Message = "Error parsing longitude: " + err.Error()
+		return GCFReturnStruct(response)
+	}
+
 	datawisata.Lokasi = Lokasi{
 		Type:        "Point",
 		Coordinates: []float64{latitude, longitude},
