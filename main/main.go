@@ -9,7 +9,7 @@ import (
 
 func main() {
 	http.HandleFunc("/", HelloHTTP)
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(":3000", nil)
 }
 
 func HelloHTTP(w http.ResponseWriter, r *http.Request) {
@@ -25,7 +25,7 @@ func HelloHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Set CORS headers for the main request.
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	fmt.Fprintf(w, gisbdg.AddKomentar("publickey", "MONGOCONNSTRINGENV", "InformasiWisataBandung", "Komentar", r))
+	fmt.Fprintf(w, gisbdg.CreateWisata("publickey", "MONGOSTRING", "InformasiWisataBandung", "TempatWisata", r))
 }
 
 func GetToken(r *http.Request) string {
