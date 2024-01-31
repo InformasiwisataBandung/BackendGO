@@ -608,23 +608,59 @@ func UpdateWisata(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *htt
 	var response BeriPesan
 	response.Status = false
 
-	// Koneksi
 	mconn := SetConnection(MONGOCONNSTRINGENV, dbname)
-	var auth User
-	var datawisata TempatWisata
-	err := json.NewDecoder(r.Body).Decode(&datawisata)
 
+	// Upload gambar
+	gambarPath, err := UploadGambar(r)
 	if err != nil {
-		response.Message = "Error parsing application/json: " + err.Error()
+		response.Message = "Error uploading gambar: " + err.Error()
 		return GCFReturnStruct(response)
 	}
+	defer os.Remove(gambarPath)
 
-	// Get token and perform basic token validation
+	// Menerima datawisata dari permintaan multipart/form-data
+	err = r.ParseMultipartForm(10 << 20) // maksimal 10 MB
+	if err != nil {
+		response.Message = "Error parsing multipart form: " + err.Error()
+		return GCFReturnStruct(response)
+	}
+	var auth User
 	header := r.Header.Get("token")
 	if header == "" {
-		response.Message = "Header login tidak ditemukan"
+		response.Message = "Header token tidak ditemukan"
 		return GCFReturnStruct(response)
 	}
+	var datawisata TempatWisata
+	datawisata.Nama = r.FormValue("nama")
+	datawisata.Jenis = r.FormValue("jenis")
+	datawisata.Deskripsi = r.FormValue("deskripsi")
+	datawisata.Alamat = r.FormValue("alamat")
+	datawisata.Gambar = gambarPath // Menggunakan path gambar yang telah diunggah
+
+	// Parsing koordinat lokasi
+	latitudeStr := r.Form.Get("lokasi.latitude")
+	longitudeStr := r.Form.Get("lokasi.longitude")
+
+	latitude, err := strconv.ParseFloat(latitudeStr, 64)
+	if err != nil {
+		response.Message = "Error parsing latitude: " + err.Error()
+		return GCFReturnStruct(response)
+	}
+
+	longitude, err := strconv.ParseFloat(longitudeStr, 64)
+	if err != nil {
+		response.Message = "Error parsing longitude: " + err.Error()
+		return GCFReturnStruct(response)
+	}
+
+	datawisata.Lokasi = Lokasi{
+		Type:        "Point",
+		Coordinates: []float64{latitude, longitude},
+	}
+
+	// Parsing rating
+	rating, _ := strconv.ParseFloat(r.FormValue("rating"), 64)
+	datawisata.Rating = rating
 
 	// Decode token to get user details
 	tokenusername := DecodeGetUsername(os.Getenv(publickey), header)
