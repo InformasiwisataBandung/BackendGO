@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
+
 	"net/http"
 	"os"
 	"strconv"
@@ -533,13 +533,13 @@ func UploadGambar(r *http.Request) (string, error) {
 	}
 	defer file.Close()
 
-	tempDir, err := ioutil.TempDir("", "temp-images")
+	tempDir, err := os.MkdirTemp("", "temp-images")
 	if err != nil {
 		return "", err
 	}
 	defer os.RemoveAll(tempDir)
 
-	tempFile, err := ioutil.TempFile(tempDir, "gambar-*.jpg")
+	tempFile, err := os.CreateTemp(tempDir, "gambar-*.jpg")
 	if err != nil {
 		return "", err
 	}
