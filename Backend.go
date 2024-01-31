@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
@@ -493,6 +494,23 @@ func CreateWisata(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *htt
 		response.Message = "Anda tidak memiliki akses"
 		return GCFReturnStruct(response)
 	}
+	// Mendapatkan file gambar dari request
+	file, _, err := r.FormFile("gambar")
+	if err != nil {
+		response.Message = "Error getting image file: " + err.Error()
+		return GCFReturnStruct(response)
+	}
+	defer file.Close()
+
+	// Membaca file gambar sebagai byte array
+	imageBytes, err := ioutil.ReadAll(file)
+	if err != nil {
+		response.Message = "Error reading image file: " + err.Error()
+		return GCFReturnStruct(response)
+	}
+
+	// Menyimpan byte array gambar ke dalam struct TempatWisata
+	datawisata.Gambar = imageBytes
 	response.Status = true
 	CreateWisataConn(mconn, collname, datawisata)
 	response.Message = "Berhasil input data"

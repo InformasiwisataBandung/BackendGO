@@ -61,7 +61,7 @@ type TempatWisata struct {
 	Deskripsi string  `json:"deskripsi" bson:"deskripsi"`
 	Lokasi    Lokasi  `json:"lokasi" bson:"lokasi"`
 	Alamat    string  `json:"alamat" bson:"alamat"`
-	Gambar    string  `json:"gambar" bson:"gambar"`
+	Gambar    []byte  `json:"-" bson:"gambar"`
 	Rating    float64 `json:"rating" bson:"rating"`
 }
 
