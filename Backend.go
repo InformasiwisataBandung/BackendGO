@@ -454,28 +454,43 @@ func GCFReturnStruct(DataStuct any) string {
 // WISATA
 func CreateWisata(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) string {
 	var response BeriPesan
-	response.Status = false
+    response.Status = false
 
-	mconn := SetConnection(MONGOCONNSTRINGENV, dbname)
+    mconn := SetConnection(MONGOCONNSTRINGENV, dbname)
 
-	var datawisata TempatWisata
-	err := json.NewDecoder(r.Body).Decode(&datawisata)
+    // Upload gambar
+    gambarPath, err := UploadGambar(r)
+    if err != nil {
+        response.Message = "Error uploading gambar: " + err.Error()
+        return GCFReturnStruct(response)
+    }
+    defer os.Remove(gambarPath)
 
-	if err != nil {
-		response.Message = "Error parsing application/json: " + err.Error()
-		return GCFReturnStruct(response)
-	}
+    // Menerima datawisata dari permintaan multipart/form-data
+    err = r.ParseMultipartForm(10 << 20) // maksimal 10 MB
+    if err != nil {
+        response.Message = "Error parsing multipart form: " + err.Error()
+        return GCFReturnStruct(response)
+    }
 
-	// Upload gambar
-	gambarPath, err := UploadGambar(r)
-	if err != nil {
-		response.Message = "Error uploading gambar: " + err.Error()
-		return GCFReturnStruct(response)
-	}
-	defer os.Remove(gambarPath)
+    var datawisata TempatWisata
+    datawisata.Nama = r.FormValue("nama")
+    datawisata.Jenis = r.FormValue("jenis")
+    datawisata.Deskripsi = r.FormValue("deskripsi")
+    datawisata.Alamat = r.FormValue("alamat")
+    datawisata.Gambar = gambarPath // Menggunakan path gambar yang telah diunggah
 
-	// Simpan nama file gambar ke dalam struct
-	datawisata.Gambar = gambarPath
+    // Parsing koordinat lokasi
+    latitude, _ := strconv.ParseFloat(r.FormValue("lokasi.latitude"), 64)
+    longitude, _ := strconv.ParseFloat(r.FormValue("lokasi.longitude"), 64)
+    datawisata.Lokasi = Lokasi{
+        Type:        "Point",
+        Coordinates: []float64{latitude, longitude},
+    }
+
+    // Parsing rating
+    rating, _ := strconv.ParseFloat(r.FormValue("rating"), 64)
+    datawisata.Rating = rating
 
 	var auth User
 	header := r.Header.Get("token")
