@@ -465,6 +465,18 @@ func CreateWisata(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *htt
 		response.Message = "Error parsing application/json: " + err.Error()
 		return GCFReturnStruct(response)
 	}
+
+	// Upload gambar
+	gambarPath, err := UploadGambar(r)
+	if err != nil {
+		response.Message = "Error uploading gambar: " + err.Error()
+		return GCFReturnStruct(response)
+	}
+	defer os.Remove(gambarPath)
+
+	// Simpan nama file gambar ke dalam struct
+	datawisata.Gambar = gambarPath
+
 	var auth User
 	header := r.Header.Get("token")
 	if header == "" {
@@ -473,7 +485,6 @@ func CreateWisata(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *htt
 	}
 
 	// Decode token to get user details
-
 	tokenusername := DecodeGetUsername(os.Getenv(publickey), header)
 	tokenrole := DecodeGetRole(os.Getenv(publickey), header)
 	auth.Username = tokenusername
@@ -494,27 +505,32 @@ func CreateWisata(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *htt
 		response.Message = "Anda tidak memiliki akses"
 		return GCFReturnStruct(response)
 	}
-	// Mendapatkan file gambar dari request
-	file, _, err := r.FormFile("gambar")
-	if err != nil {
-		response.Message = "Error getting image file: " + err.Error()
-		return GCFReturnStruct(response)
-	}
-	defer file.Close()
 
-	// Membaca file gambar sebagai byte array
-	imageBytes, err := ioutil.ReadAll(file)
-	if err != nil {
-		response.Message = "Error reading image file: " + err.Error()
-		return GCFReturnStruct(response)
-	}
-
-	// Menyimpan byte array gambar ke dalam struct TempatWisata
-	datawisata.Gambar = imageBytes
 	response.Status = true
 	CreateWisataConn(mconn, collname, datawisata)
 	response.Message = "Berhasil input data"
 	return GCFReturnStruct(response)
+}
+func UploadGambar(r *http.Request) (string, error) {
+	file, handler, err := r.FormFile("gambar")
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	tempFile, err := ioutil.TempFile("temp-images", handler.Filename)
+	if err != nil {
+		return "", err
+	}
+	defer tempFile.Close()
+
+	fileBytes, err := ioutil.ReadAll(file)
+	if err != nil {
+		return "", err
+	}
+
+	tempFile.Write(fileBytes)
+	return tempFile.Name(), nil
 }
 
 // GET FIX
