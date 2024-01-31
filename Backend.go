@@ -472,7 +472,12 @@ func CreateWisata(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *htt
 		response.Message = "Error parsing multipart form: " + err.Error()
 		return GCFReturnStruct(response)
 	}
-
+	var auth User
+	header := r.Header.Get("token")
+	if header == "" {
+		response.Message = "Header token tidak ditemukan"
+		return GCFReturnStruct(response)
+	}
 	var datawisata TempatWisata
 	datawisata.Nama = r.FormValue("nama")
 	datawisata.Jenis = r.FormValue("jenis")
@@ -491,13 +496,6 @@ func CreateWisata(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *htt
 	// Parsing rating
 	rating, _ := strconv.ParseFloat(r.FormValue("rating"), 64)
 	datawisata.Rating = rating
-
-	var auth User
-	header := r.Header.Get("token")
-	if header == "" {
-		response.Message = "Header token tidak ditemukan"
-		return GCFReturnStruct(response)
-	}
 
 	// Decode token to get user details
 	tokenusername := DecodeGetUsername(os.Getenv(publickey), header)
