@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"path/filepath"
+
 	"github.com/aiteung/atapi"
 	"github.com/aiteung/atmessage"
 	"github.com/whatsauth/wa"
@@ -537,6 +539,7 @@ func CreateWisata(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *htt
 	response.Message = "Berhasil input data"
 	return GCFReturnStruct(response)
 }
+
 func UploadGambar(r *http.Request) (string, error) {
 	file, _, err := r.FormFile("gambar")
 	if err != nil {
@@ -544,24 +547,36 @@ func UploadGambar(r *http.Request) (string, error) {
 	}
 	defer file.Close()
 
-	tempDir, err := os.MkdirTemp("", "temp-images")
-	if err != nil {
-		return "", err
-	}
-	defer os.RemoveAll(tempDir)
+	// Simpan gambar ke server yang diinginkan
+	imagePath := "/images/"
+	imageDir := "./images/" // Direktori penyimpanan gambar lokal di server
 
-	tempFile, err := os.CreateTemp(tempDir, "gambar-*.jpg")
-	if err != nil {
-		return "", err
-	}
-	defer tempFile.Close()
-
-	_, err = io.Copy(tempFile, file)
+	// Membuat direktori jika belum ada
+	err = os.MkdirAll(imageDir, os.ModePerm)
 	if err != nil {
 		return "", err
 	}
 
-	return tempFile.Name(), nil
+	// Buat file baru untuk menyimpan gambar
+	imageFile, err := os.Create(filepath.Join(imageDir, "gambar-*.jpg"))
+	if err != nil {
+		return "", err
+	}
+	defer imageFile.Close()
+
+	// Salin konten gambar ke file baru
+	_, err = io.Copy(imageFile, file)
+	if err != nil {
+		return "", err
+	}
+
+	// Mendapatkan nama file gambar
+	filename := filepath.Base(imageFile.Name())
+
+	// Path gambar yang disimpan di MongoDB
+	finalImagePath := imagePath + filename
+
+	return finalImagePath, nil
 }
 
 // GET FIX
