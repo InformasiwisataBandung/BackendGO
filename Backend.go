@@ -601,39 +601,44 @@ func ServeImage(w http.ResponseWriter, r *http.Request) {
 
 // GET FIX
 func ReadWisata(MONGOCONNSTRINGENV, dbname, collname string, w http.ResponseWriter, r *http.Request) {
-	var response BeriPesan
-	response.Status = false
+    // Koneksi ke MongoDB
+    mconn := SetConnection(MONGOCONNSTRINGENV, dbname)
 
-	// Koneksi ke MongoDB
-	mconn := SetConnection(MONGOCONNSTRINGENV, dbname)
+    // Mengambil semua data tempat wisata
+    datawisata := GetAllWisata(mconn, collname)
 
-	// Mengambil semua data tempat wisata
-	datawisata := GetAllWisata(mconn, collname)
+    // Loop melalui data tempat wisata untuk menampilkan gambar dari MongoDB
+    for _, wisata := range datawisata {
+        // Membuka file gambar dari MongoDB menggunakan ID gambar
+        file, err := OpenImageFromMongoDB(mconn, dbname, wisata.GambarID)
+        if err != nil {
+            // Handle error
+            response := BeriPesan{Status: false, Message: "Error opening image from MongoDB: " + err.Error()}
+            w.WriteHeader(http.StatusInternalServerError)
+            json.NewEncoder(w).Encode(response)
+            return
+        }
+        defer file.Close()
 
-	// Loop melalui data tempat wisata untuk menampilkan gambar dari MongoDB
-	for _, wisata := range datawisata {
-		// Membuka file gambar dari MongoDB menggunakan ID gambar
-		file, err := OpenImageFromMongoDB(mconn, dbname, wisata.GambarID)
-		if err != nil {
-			// Handle error
-			response.Message = "Error opening image from MongoDB: " + err.Error()
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(response)
-			return
-		}
-		defer file.Close()
+        // Mengirimkan gambar sebagai respons HTTP
+        w.Header().Set("Content-Type", "image/jpeg") // Atur tipe konten sesuai dengan jenis gambar
+        _, err = io.Copy(w, file)
+        if err != nil {
+            // Handle error
+            response := BeriPesan{Status: false, Message: "Error sending image as response: " + err.Error()}
+            w.WriteHeader(http.StatusInternalServerError)
+            json.NewEncoder(w).Encode(response)
+            return
+        }
+        return
+    }
 
-		// Mengirimkan gambar sebagai respons HTTP
-		w.Header().Set("Content-Type", "image/jpeg") // Atur tipe konten sesuai dengan jenis gambar
-		io.Copy(w, file)
-		return
-	}
-
-	// Jika tidak ada data tempat wisata atau gambar yang ditemukan
-	response.Message = "No data found"
-	w.WriteHeader(http.StatusNotFound)
-	json.NewEncoder(w).Encode(response)
+    // Jika tidak ada data tempat wisata atau gambar yang ditemukan
+    response := BeriPesan{Status: false, Message: "No data found"}
+    w.WriteHeader(http.StatusNotFound)
+    json.NewEncoder(w).Encode(response)
 }
+
 
 func OpenImageFromMongoDB(mconn *mongo.Database, dbname string, GambarID string) (io.ReadCloser, error) {
 
