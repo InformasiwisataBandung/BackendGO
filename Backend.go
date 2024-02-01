@@ -476,7 +476,8 @@ func CreateWisata(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *htt
 	}
 
 	// Simpan gambar sebagai BLOB di MongoDB
-	gambarID, err := SaveImageToMongoDB(client, dbname, gambarBytes)
+	gambarID, err := SaveImageToMongoDB(mconn, gambarBytes)
+
 	if err != nil {
 		response.Message = "Error saving gambar: " + err.Error()
 		return GCFReturnStruct(response)
@@ -556,30 +557,29 @@ func CreateWisata(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *htt
 	return GCFReturnStruct(response)
 }
 
-func SaveImageToMongoDB(client *mongo.Client, dbname string, imageBytes []byte) (string, error) {
-	db := client.Database(dbname)
-	bucket, err := gridfs.NewBucket(db)
-	if err != nil {
-		return "", err
-	}
+func SaveImageToMongoDB(mconn *mongo.Database, imageBytes []byte) (string, error) {
+    bucket, err := gridfs.NewBucket(mconn)
+    if err != nil {
+        return "", err
+    }
 
-	uploadStream, err := bucket.OpenUploadStream("gambar")
-	if err != nil {
-		return "", err
-	}
-	defer uploadStream.Close()
+    uploadStream, err := bucket.OpenUploadStream("gambar")
+    if err != nil {
+        return "", err
+    }
+    defer uploadStream.Close()
 
-	_, err = uploadStream.Write(imageBytes)
-	if err != nil {
-		return "", err
-	}
+    _, err = uploadStream.Write(imageBytes)
+    if err != nil {
+        return "", err
+    }
 
-	// Mengambil ID file yang telah disimpan
-	fileID, ok := uploadStream.FileID.(primitive.ObjectID)
-	if !ok {
-		return "", errors.New("unexpected file ID type")
-	}
-	return fileID.Hex(), nil
+    // Mengambil ID file yang telah disimpan
+    fileID, ok := uploadStream.FileID.(primitive.ObjectID)
+    if !ok {
+        return "", errors.New("unexpected file ID type")
+    }
+    return fileID.Hex(), nil
 }
 
 func ServeImage(w http.ResponseWriter, r *http.Request) {
