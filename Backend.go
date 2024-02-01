@@ -548,7 +548,7 @@ func UploadGambar(r *http.Request) (string, error) {
 	defer file.Close()
 
 	// Simpan gambar ke server yang diinginkan
-	imagePath := "/images/"
+	imagePath := "https://informasiwisatabandung.my.id/images/"
 	imageDir := "./images/" // Direktori penyimpanan gambar lokal di server
 
 	// Membuat direktori jika belum ada
