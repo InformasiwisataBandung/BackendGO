@@ -5,13 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 	"time"
-
-	"path/filepath"
 
 	"github.com/aiteung/atapi"
 	"github.com/aiteung/atmessage"
@@ -539,7 +537,6 @@ func CreateWisata(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *htt
 	response.Message = "Berhasil input data"
 	return GCFReturnStruct(response)
 }
-
 func UploadGambar(r *http.Request) (string, error) {
 	file, _, err := r.FormFile("gambar")
 	if err != nil {
@@ -547,36 +544,24 @@ func UploadGambar(r *http.Request) (string, error) {
 	}
 	defer file.Close()
 
-	// Simpan gambar ke server yang diinginkan
-	imagePath := "https://informasiwisatabandung.my.id/images/"
-	imageDir := "./images/" // Direktori penyimpanan gambar lokal di server
+	tempDir, err := os.MkdirTemp("", "temp-images")
+	if err != nil {
+		return "", err
+	}
+	defer os.RemoveAll(tempDir)
 
-	// Membuat direktori jika belum ada
-	err = os.MkdirAll(imageDir, os.ModePerm)
+	tempFile, err := os.CreateTemp(tempDir, "gambar-*.jpg")
+	if err != nil {
+		return "", err
+	}
+	defer tempFile.Close()
+
+	_, err = io.Copy(tempFile, file)
 	if err != nil {
 		return "", err
 	}
 
-	// Buat file baru untuk menyimpan gambar
-	imageFile, err := os.Create(filepath.Join(imageDir, "gambar-*.jpg"))
-	if err != nil {
-		return "", err
-	}
-	defer imageFile.Close()
-
-	// Salin konten gambar ke file baru
-	_, err = io.Copy(imageFile, file)
-	if err != nil {
-		return "", err
-	}
-
-	// Mendapatkan nama file gambar
-	filename := filepath.Base(imageFile.Name())
-
-	// Path gambar yang disimpan di MongoDB
-	finalImagePath := imagePath + filename
-
-	return finalImagePath, nil
+	return tempFile.Name(), nil
 }
 
 // GET FIX
@@ -589,32 +574,8 @@ func ReadWisata(MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) st
 
 	//ngambil semua tempat wisata
 	datawisata := GetAllWisata(mconn, collname)
-
-	// Menyertakan path atau URL gambar dalam data tempat wisata
-	for i := range datawisata {
-		datawisata[i].Gambar = constructImageUrl(datawisata[i].Gambar) // Fungsi untuk membuat URL gambar
-	}
-
 	return GCFReturnStruct(datawisata)
 }
-
-// Fungsi untuk membuat URL gambar dari path gambar yang tersimpan di server yang sama dengan aplikasi
-func constructImageUrl(gambarPath string) string {
-	// URL base tempat gambar disimpan di server
-	baseImageUrl := "/images/"
-
-	// Mengambil nama file gambar dari path
-	// Di sini, kita mengasumsikan bahwa nama file gambar berada setelah tanda "/" terakhir
-	// Anda mungkin perlu menyesuaikan cara ini sesuai dengan struktur path gambar yang sebenarnya
-	segments := strings.Split(gambarPath, "/")
-	filename := segments[len(segments)-1]
-
-	// Mengonstruksi URL lengkap untuk gambar
-	imageUrl := baseImageUrl + filename
-
-	return imageUrl
-}
-
 func ReadOnWisata(MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) string {
 	var response BeriPesan
 	response.Status = false
