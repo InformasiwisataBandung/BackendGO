@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/aiteung/atapi"
@@ -574,8 +574,32 @@ func ReadWisata(MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) st
 
 	//ngambil semua tempat wisata
 	datawisata := GetAllWisata(mconn, collname)
+
+	// Menyertakan path atau URL gambar dalam data tempat wisata
+	for i := range datawisata {
+		datawisata[i].Gambar = constructImageUrl(datawisata[i].Gambar) // Fungsi untuk membuat URL gambar
+	}
+
 	return GCFReturnStruct(datawisata)
 }
+
+// Fungsi untuk membuat URL gambar dari path gambar yang tersimpan di server yang sama dengan aplikasi
+func constructImageUrl(gambarPath string) string {
+	// URL base tempat gambar disimpan di server
+	baseImageUrl := "/tmp/"
+
+	// Mengambil nama file gambar dari path
+	// Di sini, kita mengasumsikan bahwa nama file gambar berada setelah tanda "/" terakhir
+	// Anda mungkin perlu menyesuaikan cara ini sesuai dengan struktur path gambar yang sebenarnya
+	segments := strings.Split(gambarPath, "/")
+	filename := segments[len(segments)-1]
+
+	// Mengonstruksi URL lengkap untuk gambar
+	imageUrl := baseImageUrl + filename
+
+	return imageUrl
+}
+
 func ReadOnWisata(MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) string {
 	var response BeriPesan
 	response.Status = false
