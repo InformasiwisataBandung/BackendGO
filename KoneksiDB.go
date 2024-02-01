@@ -66,6 +66,8 @@ func HapusUser(MONGOCONNSTRINGENV *mongo.Database, collname string, userdata Use
 
 // Crud Connection Wisata
 
+
+
 func CreateWisataConn(MONGOCONNSTRINGENV *mongo.Database, collname string, datawisata TempatWisata) interface{} {
 	return atdb.InsertOneDoc(MONGOCONNSTRINGENV, collname, datawisata)
 }

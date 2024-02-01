@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 
+	"errors"
 	"net/http"
 	"os"
 	"strconv"
@@ -16,7 +17,9 @@ import (
 	"github.com/whatsauth/wa"
 	"github.com/whatsauth/watoken"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/gridfs"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -459,12 +462,25 @@ func CreateWisata(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *htt
 	mconn := SetConnection(MONGOCONNSTRINGENV, dbname)
 
 	// Upload gambar
-	gambarPath, err := UploadGambar(r)
+	file, _, err := r.FormFile("gambar")
 	if err != nil {
-		response.Message = "Error uploading gambar: " + err.Error()
+		response.Message = "Error reading gambar: " + err.Error()
 		return GCFReturnStruct(response)
 	}
-	defer os.Remove(gambarPath)
+	defer file.Close()
+
+	gambarBytes, err := io.ReadAll(file)
+	if err != nil {
+		response.Message = "Error reading gambar: " + err.Error()
+		return GCFReturnStruct(response)
+	}
+
+	// Simpan gambar sebagai BLOB di MongoDB
+	gambarID, err := SaveImageToMongoDB(client, dbname, gambarBytes)
+	if err != nil {
+		response.Message = "Error saving gambar: " + err.Error()
+		return GCFReturnStruct(response)
+	}
 
 	// Menerima datawisata dari permintaan multipart/form-data
 	err = r.ParseMultipartForm(10 << 20) // maksimal 10 MB
@@ -472,18 +488,20 @@ func CreateWisata(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *htt
 		response.Message = "Error parsing multipart form: " + err.Error()
 		return GCFReturnStruct(response)
 	}
+
 	var auth User
 	header := r.Header.Get("token")
 	if header == "" {
 		response.Message = "Header token tidak ditemukan"
 		return GCFReturnStruct(response)
 	}
+
 	var datawisata TempatWisata
 	datawisata.Nama = r.FormValue("nama")
 	datawisata.Jenis = r.FormValue("jenis")
 	datawisata.Deskripsi = r.FormValue("deskripsi")
 	datawisata.Alamat = r.FormValue("alamat")
-	datawisata.Gambar = gambarPath // Menggunakan path gambar yang telah diunggah
+	datawisata.GambarID = gambarID // Menggunakan ID gambar yang telah disimpan di MongoDB
 
 	// Parsing koordinat lokasi
 	latitudeStr := r.Form.Get("lokasi.latitude")
@@ -537,31 +555,48 @@ func CreateWisata(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *htt
 	response.Message = "Berhasil input data"
 	return GCFReturnStruct(response)
 }
-func UploadGambar(r *http.Request) (string, error) {
-	file, _, err := r.FormFile("gambar")
+
+func SaveImageToMongoDB(client *mongo.Client, dbname string, imageBytes []byte) (string, error) {
+	db := client.Database(dbname)
+	bucket, err := gridfs.NewBucket(db)
 	if err != nil {
 		return "", err
+	}
+
+	uploadStream, err := bucket.OpenUploadStream("gambar")
+	if err != nil {
+		return "", err
+	}
+	defer uploadStream.Close()
+
+	_, err = uploadStream.Write(imageBytes)
+	if err != nil {
+		return "", err
+	}
+
+	// Mengambil ID file yang telah disimpan
+	fileID, ok := uploadStream.FileID.(primitive.ObjectID)
+	if !ok {
+		return "", errors.New("unexpected file ID type")
+	}
+	return fileID.Hex(), nil
+}
+
+func ServeImage(w http.ResponseWriter, r *http.Request) {
+	// Mendapatkan path gambar dari permintaan
+	imagePath := r.URL.Query().Get("path")
+
+	// Membuka file gambar
+	file, err := os.Open(imagePath)
+	if err != nil {
+		http.Error(w, "Gambar tidak ditemukan", http.StatusNotFound)
+		return
 	}
 	defer file.Close()
 
-	tempDir, err := os.MkdirTemp("", "temp-images")
-	if err != nil {
-		return "", err
-	}
-	defer os.RemoveAll(tempDir)
-
-	tempFile, err := os.CreateTemp(tempDir, "gambar-*.jpg")
-	if err != nil {
-		return "", err
-	}
-	defer tempFile.Close()
-
-	_, err = io.Copy(tempFile, file)
-	if err != nil {
-		return "", err
-	}
-
-	return tempFile.Name(), nil
+	// Mengirimkan gambar sebagai respons
+	w.Header().Set("Content-Type", "image/jpeg") // Atur tipe konten sesuai dengan jenis gambar
+	io.Copy(w, file)
 }
 
 // GET FIX
@@ -604,91 +639,94 @@ func ReadOnWisata(MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) 
 	return GCFReturnStruct(response)
 
 }
-func UpdateWisata(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) string {
-	var response BeriPesan
-	response.Status = false
 
-	mconn := SetConnection(MONGOCONNSTRINGENV, dbname)
+/*
+	func UpdateWisata(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) string {
+		var response BeriPesan
+		response.Status = false
 
-	// Upload gambar
-	gambarPath, err := UploadGambar(r)
-	if err != nil {
-		response.Message = "Error uploading gambar: " + err.Error()
+		mconn := SetConnection(MONGOCONNSTRINGENV, dbname)
+
+		// Upload gambar
+		gambarPath, err := UploadGambar(r)
+		if err != nil {
+			response.Message = "Error uploading gambar: " + err.Error()
+			return GCFReturnStruct(response)
+		}
+		defer os.Remove(gambarPath)
+
+		// Menerima datawisata dari permintaan multipart/form-data
+		err = r.ParseMultipartForm(10 << 20) // maksimal 10 MB
+		if err != nil {
+			response.Message = "Error parsing multipart form: " + err.Error()
+			return GCFReturnStruct(response)
+		}
+		var auth User
+		header := r.Header.Get("token")
+		if header == "" {
+			response.Message = "Header token tidak ditemukan"
+			return GCFReturnStruct(response)
+		}
+		var datawisata TempatWisata
+		datawisata.Nama = r.FormValue("nama")
+		datawisata.Jenis = r.FormValue("jenis")
+		datawisata.Deskripsi = r.FormValue("deskripsi")
+		datawisata.Alamat = r.FormValue("alamat")
+		datawisata.Gambar = gambarPath // Menggunakan path gambar yang telah diunggah
+
+		// Parsing koordinat lokasi
+		latitudeStr := r.Form.Get("lokasi.latitude")
+		longitudeStr := r.Form.Get("lokasi.longitude")
+
+		latitude, err := strconv.ParseFloat(latitudeStr, 64)
+		if err != nil {
+			response.Message = "Error parsing latitude: " + err.Error()
+			return GCFReturnStruct(response)
+		}
+
+		longitude, err := strconv.ParseFloat(longitudeStr, 64)
+		if err != nil {
+			response.Message = "Error parsing longitude: " + err.Error()
+			return GCFReturnStruct(response)
+		}
+
+		datawisata.Lokasi = Lokasi{
+			Type:        "Point",
+			Coordinates: []float64{latitude, longitude},
+		}
+
+		// Parsing rating
+		rating, _ := strconv.ParseFloat(r.FormValue("rating"), 64)
+		datawisata.Rating = rating
+
+		// Decode token to get user details
+		tokenusername := DecodeGetUsername(os.Getenv(publickey), header)
+		tokenrole := DecodeGetRole(os.Getenv(publickey), header)
+		auth.Username = tokenusername
+
+		if tokenusername == "" || tokenrole == "" {
+			response.Message = "Hasil decode tidak ditemukan"
+			return GCFReturnStruct(response)
+		}
+
+		// Check if the user account exists
+		if !usernameExists(MONGOCONNSTRINGENV, dbname, auth) {
+			response.Message = "Akun tidak ditemukan"
+			return GCFReturnStruct(response)
+		}
+
+		// Check if the user has admin or user privileges
+		if tokenrole != "admin" && tokenrole != "user" {
+			response.Message = "Anda tidak memiliki akses"
+			return GCFReturnStruct(response)
+		}
+		response.Status = true
+		UpdateWisataConn(mconn, collname, datawisata)
+		response.Message = "Berhasil Update data Ya"
 		return GCFReturnStruct(response)
-	}
-	defer os.Remove(gambarPath)
-
-	// Menerima datawisata dari permintaan multipart/form-data
-	err = r.ParseMultipartForm(10 << 20) // maksimal 10 MB
-	if err != nil {
-		response.Message = "Error parsing multipart form: " + err.Error()
-		return GCFReturnStruct(response)
-	}
-	var auth User
-	header := r.Header.Get("token")
-	if header == "" {
-		response.Message = "Header token tidak ditemukan"
-		return GCFReturnStruct(response)
-	}
-	var datawisata TempatWisata
-	datawisata.Nama = r.FormValue("nama")
-	datawisata.Jenis = r.FormValue("jenis")
-	datawisata.Deskripsi = r.FormValue("deskripsi")
-	datawisata.Alamat = r.FormValue("alamat")
-	datawisata.Gambar = gambarPath // Menggunakan path gambar yang telah diunggah
-
-	// Parsing koordinat lokasi
-	latitudeStr := r.Form.Get("lokasi.latitude")
-	longitudeStr := r.Form.Get("lokasi.longitude")
-
-	latitude, err := strconv.ParseFloat(latitudeStr, 64)
-	if err != nil {
-		response.Message = "Error parsing latitude: " + err.Error()
-		return GCFReturnStruct(response)
-	}
-
-	longitude, err := strconv.ParseFloat(longitudeStr, 64)
-	if err != nil {
-		response.Message = "Error parsing longitude: " + err.Error()
-		return GCFReturnStruct(response)
-	}
-
-	datawisata.Lokasi = Lokasi{
-		Type:        "Point",
-		Coordinates: []float64{latitude, longitude},
-	}
-
-	// Parsing rating
-	rating, _ := strconv.ParseFloat(r.FormValue("rating"), 64)
-	datawisata.Rating = rating
-
-	// Decode token to get user details
-	tokenusername := DecodeGetUsername(os.Getenv(publickey), header)
-	tokenrole := DecodeGetRole(os.Getenv(publickey), header)
-	auth.Username = tokenusername
-
-	if tokenusername == "" || tokenrole == "" {
-		response.Message = "Hasil decode tidak ditemukan"
-		return GCFReturnStruct(response)
-	}
-
-	// Check if the user account exists
-	if !usernameExists(MONGOCONNSTRINGENV, dbname, auth) {
-		response.Message = "Akun tidak ditemukan"
-		return GCFReturnStruct(response)
-	}
-
-	// Check if the user has admin or user privileges
-	if tokenrole != "admin" && tokenrole != "user" {
-		response.Message = "Anda tidak memiliki akses"
-		return GCFReturnStruct(response)
-	}
-	response.Status = true
-	UpdateWisataConn(mconn, collname, datawisata)
-	response.Message = "Berhasil Update data Ya"
-	return GCFReturnStruct(response)
 
 }
+*/
 func DeleteWisata(publickey, MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) string {
 	var response BeriPesan
 	response.Status = false

@@ -61,9 +61,10 @@ type TempatWisata struct {
     Deskripsi string  `json:"deskripsi" bson:"deskripsi"`
     Lokasi    Lokasi  `json:"lokasi" bson:"lokasi"`
     Alamat    string  `json:"alamat" bson:"alamat"`
-    Gambar    string  `json:"gambar" bson:"gambar"`
+    GambarID  string  `json:"gambar_id" bson:"gambar_id"` // ID gambar di MongoDB
     Rating    float64 `json:"rating" bson:"rating"`
 }
+
 
 
 type Lokasi struct {
