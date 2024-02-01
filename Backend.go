@@ -586,7 +586,7 @@ func ReadWisata(MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) st
 // Fungsi untuk membuat URL gambar dari path gambar yang tersimpan di server yang sama dengan aplikasi
 func constructImageUrl(gambarPath string) string {
 	// URL base tempat gambar disimpan di server
-	baseImageUrl := "/tmp/"
+	baseImageUrl := "/images/"
 
 	// Mengambil nama file gambar dari path
 	// Di sini, kita mengasumsikan bahwa nama file gambar berada setelah tanda "/" terakhir
