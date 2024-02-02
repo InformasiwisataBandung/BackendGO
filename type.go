@@ -56,16 +56,15 @@ type Credential struct {
 	Message string `json:"message,omitempty" bson:"message,omitempty"`
 }
 type TempatWisata struct {
-    Nama      string  `json:"nama"  bson:"nama"`
-    Jenis     string  `json:"jenis" bson:"jenis"`
-    Deskripsi string  `json:"deskripsi" bson:"deskripsi"`
-    Lokasi    Lokasi  `json:"lokasi" bson:"lokasi"`
-    Alamat    string  `json:"alamat" bson:"alamat"`
-    GambarID  string  `json:"gambar_id" bson:"gambar_id"` // ID gambar di MongoDB
-    Rating    float64 `json:"rating" bson:"rating"`
+	Nama         string  `json:"nama"  bson:"nama"`
+	Jenis        string  `json:"jenis" bson:"jenis"`
+	Deskripsi    string  `json:"deskripsi" bson:"deskripsi"`
+	Lokasi       Lokasi  `json:"lokasi" bson:"lokasi"`
+	Alamat       string  `json:"alamat" bson:"alamat"`
+	GambarID     string  `json:"gambar_id" bson:"gambar_id"` // ID gambar di MongoDB
+	GambarBase64 string  `json:"gambar_base64,omitempty" bson:"-"`
+	Rating       float64 `json:"rating" bson:"rating"`
 }
-
-
 
 type Lokasi struct {
 	Type        string    `json:"type"`
