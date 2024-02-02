@@ -600,46 +600,16 @@ func ServeImage(w http.ResponseWriter, r *http.Request) {
 }
 
 // GET FIX
-func ReadWisata(MONGOCONNSTRINGENV, dbname, collname string,r *http.Request) {
-    var response BeriPesan
-    response.Status = false
+func ReadWisata(MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) string {
+	var response BeriPesan
+	response.Status = false
 
-    // Koneksi ke MongoDB
-    mconn := SetConnection(MONGOCONNSTRINGENV, dbname)
+	// Establish MongoDB connection
+	mconn := SetConnection(MONGOCONNSTRINGENV, dbname)
 
-    // Mengambil semua data tempat wisata
-    datawisata := GetAllWisata(mconn, collname)
-
-    // Loop melalui data tempat wisata untuk menampilkan gambar dari MongoDB
-    for _, wisata := range datawisata {
-        // Membuka file gambar dari MongoDB menggunakan ID gambar
-        file, err := OpenImageFromMongoDB(mconn, dbname, wisata.GambarID)
-        if err != nil {
-            // Handle error
-            response.Message = "Error opening image from MongoDB: " + err.Error()
-            return
-        }
-        defer file.Close()
-    }
-
-    // Jika tidak ada data tempat wisata atau gambar yang ditemukan
-    response.Message = "No data found"
-}
-
-func OpenImageFromMongoDB(mconn *mongo.Database, dbname string, GambarID string) (io.ReadCloser, error) {
-
-	// Membuka file gambar dari MongoDB menggunakan ID gambar
-	bucket, err := gridfs.NewBucket(mconn)
-	if err != nil {
-		return nil, err
-	}
-
-	downloadStream, err := bucket.OpenDownloadStream(GambarID)
-	if err != nil {
-		return nil, err
-	}
-
-	return downloadStream, nil
+	// Get all komentar data
+	datakomentar := GetAllWisata(mconn, collname)
+	return GCFReturnStruct(datakomentar)
 }
 
 func ReadOnWisata(MONGOCONNSTRINGENV, dbname, collname string, r *http.Request) string {
